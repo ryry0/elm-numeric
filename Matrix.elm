@@ -48,14 +48,6 @@ mulCorrect a b =
 mul : Matrix -> Matrix -> Matrix
 mul a b =
   case (a,b) of
-    (Mat _, Err string) ->
-      Err <| "Matrix a: " ++ string
-
-    (Err string, Mat _) ->
-      Err <| "Matrix b: " ++ string
-
-    (Err string, Err string2) ->
-      Err <| "Matrix a: " ++ string ++ "Matrix b: " ++ string2
 
     (Mat a_, Mat b_) ->
       if numColumns a_ /= numRows b_ then
@@ -168,6 +160,16 @@ equivalent a b =
     _ ->
       False
 
-forwardError : Matrix -> Matrix -> Matrix
-forwardError a b =
-  Err "Not implemented"
+forwardError : String -> Matrix -> Matrix -> Matrix
+forwardError error a b =
+    (Mat _, Err string) ->
+      Err <| error ++ "\n\t Matrix a: " ++ string
+
+    (Err string, Mat _) ->
+      Err <| error ++ "\n\t Matrix b: " ++ string
+
+    (Err string, Err string2) ->
+      Err <| error ++ "\n\t Matrix a: " ++ string ++ "Matrix b: " ++ string2
+
+    (_, _) ->
+      Err <| error ++ "\n\t Implement the correctly formed matrix branch."
