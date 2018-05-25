@@ -61,7 +61,18 @@ from2DList a =
         Err <| "One or more of the sublist rows are malformed"
 
     Nothing ->
-      Err <| "Empty List"
+        fromList (0, 0) []
+
+
+{-| Create a column vector from a list
+-}
+cvecFromList : List Float -> Matrix
+cvecFromList a =
+
+{-| Create a row vector from a list
+-}
+rvecFromList : List Float -> Matrix
+rvecFromList a =
 
 {-| Multiply two correctly formed matrices
 -}
@@ -191,7 +202,7 @@ dot a b =
         same_length = (numRows a_) == (numRows b_)
     in
     if a_is_vector && b_is_vector && same_length then
-       Just 2
+       Just <| List.sum <| List.map2 (*) a_.elements b_.elements
 
     else
       Nothing
