@@ -48,7 +48,6 @@ mulCorrect a b =
 mul : Matrix -> Matrix -> Matrix
 mul a b =
   case (a,b) of
-
     (Mat a_, Mat b_) ->
       if numColumns a_ /= numRows b_ then
          let
@@ -58,6 +57,8 @@ mul a b =
          Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
       else
         mulCorrect a_ b_
+    (_, _) ->
+      forwardError "[function mul]" a b
 
 prettyPrint : Matrix -> String
 prettyPrint a =
@@ -97,11 +98,11 @@ eye diagonal =
 get : (Int, Int) -> Matrix -> Matrix
 get (r_index, c_index) a =
   case a of
-    Err string ->
-      Err string
-
     Mat a_ ->
       Err "Not implemented"
+
+    Err string ->
+      Err string
 
 {-| Add two matrices of identical dimensions together
 -}
@@ -112,11 +113,17 @@ add a b =
       if equalSize a_ b_ then
       fromList (numRows a_, numColumns a_) <| List.map2 (+) a_.elements b_.elements
       else
-        Err "Matrices not equal size."
+      let
+          adims = dimToString a_
+          bdims = dimToString b_
+      in
+        Err <| "Matrices not equal size. a: " ++ adims ++ ", b: " ++ bdims
 
     (_,_) ->
-      Err "Not implemented"
+      forwardError "[function add]" a b
 
+{-| Perform scalar multiplication on a matrix
+-}
 sMul : Float -> Matrix -> Matrix
 sMul a b =
   case b of
@@ -162,10 +169,11 @@ equivalent a b =
 
 forwardError : String -> Matrix -> Matrix -> Matrix
 forwardError error a b =
-    (Mat _, Err string) ->
+  case (a,b) of
+    (Err string, Mat _) ->
       Err <| error ++ "\n\t Matrix a: " ++ string
 
-    (Err string, Mat _) ->
+    (Mat _, Err string) ->
       Err <| error ++ "\n\t Matrix b: " ++ string
 
     (Err string, Err string2) ->
@@ -173,3 +181,11 @@ forwardError error a b =
 
     (_, _) ->
       Err <| error ++ "\n\t Implement the correctly formed matrix branch."
+
+dimToString : Matnxn -> String
+dimToString a =
+  let
+        arows = toString <| numRows a
+        acols = toString <| numColumns a
+  in
+  "(" ++ arows ++ "," ++ acols ++ ")"
