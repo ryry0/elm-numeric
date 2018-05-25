@@ -1,4 +1,5 @@
-module Matrix exposing (fromList, mul, sMul, prettyPrint, add, equivalent, from2DList)
+module Matrix exposing (fromList, mul, sMul, prettyPrint, add, equivalent,
+  from2DList, sDiv)
 
 type alias Matnxn =
   {
@@ -62,10 +63,14 @@ from2DList a =
     Nothing ->
       Err <| "Empty List"
 
+{-| Multiply two correctly formed matrices
+-}
 mulCorrect : Matnxn -> Matnxn ->  Matrix
 mulCorrect a b =
     Mat a
 
+{-| Multiply with error handling
+-}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
   case (a,b) of
@@ -78,6 +83,7 @@ mul a b =
          Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
       else
         mulCorrect a_ b_
+
     (_, _) ->
       forwardError "[function mul]" a b
 
@@ -159,6 +165,12 @@ sMul a b =
     Err string ->
       Err string
 
+{-| Perform scalar division on a matrix
+-}
+sDiv : Float -> Matrix -> Matrix
+sDiv a b =
+  sMul (1/a) b
+
 invert : Matrix -> Matrix
 invert a =
   Err "Not implemented"
@@ -167,9 +179,25 @@ transpose : Matrix -> Matrix
 transpose a =
   Err "Not implemented"
 
-dot : Matrix -> Matrix -> Float
+{-| Performs the dot product of two vectors
+-}
+dot : Matrix -> Matrix -> Maybe Float
 dot a b =
-  0.0
+  case (a,b) of
+    (Mat a_, Mat b_) ->
+    let
+        a_is_vector = numColumns a_ == 1
+        b_is_vector = numColumns b_ == 1
+        same_length = (numRows a_) == (numRows b_)
+    in
+    if a_is_vector && b_is_vector && same_length then
+       Just 2
+
+    else
+      Nothing
+
+    (_,_) ->
+      Nothing -- is there a way to do good scalar error handling?
 
 
 cross : Matrix -> Matrix
@@ -201,6 +229,9 @@ equivalent a b =
     _ ->
       False
 
+{-| Helper to catch errors in functions of two variables (Matrix -> Matrix) ->
+  Matrix
+-}
 forwardError : String -> Matrix -> Matrix -> Matrix
 forwardError error a b =
   case (a,b) of
