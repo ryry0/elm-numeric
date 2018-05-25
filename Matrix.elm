@@ -1,4 +1,4 @@
-module Matrix exposing (fromList, mul, prettyPrint)
+module Matrix exposing (fromList, mul, sMul, prettyPrint, add)
 
 type alias Matnxn =
   {
@@ -24,7 +24,7 @@ numColumns a =
   Tuple.second a.dimensions
 
 {-| Create a (n x m) matrix with the list as the elements.
-Fails if dimension mismatch.
+Fails if dimension mismatch. Elements need to be specified in row-major order.
 -}
 fromList : (Int, Int) -> List Float -> Matrix
 fromList (rows, columns) elements =
@@ -37,6 +37,9 @@ fromList (rows, columns) elements =
   in
     Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
 
+from2dList : List (List Float) -> Matrix
+from2dList a =
+  Err "Not implemented"
 
 mulCorrect : Matnxn -> Matnxn ->  Matrix
 mulCorrect a b =
