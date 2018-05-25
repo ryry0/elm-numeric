@@ -1,4 +1,4 @@
-module Matrix exposing (fromList, mul, sMul, prettyPrint, add)
+module Matrix exposing (fromList, mul, sMul, prettyPrint, add, equivalent)
 
 type alias Matnxn =
   {
@@ -63,10 +63,11 @@ mul a b =
 prettyPrint : Matrix -> String
 prettyPrint a =
   case a of
-    Err string ->
-      string
     Mat mat ->
       prettyPrintCorrect mat
+
+    Err string ->
+      string
 
 prettyPrintCorrect : Matnxn -> String
 prettyPrintCorrect a =
@@ -91,10 +92,14 @@ takeRows numelem list =
 
 --takeColumns : Int -> List a -> List (List a)
 
+{-| Create an nxn identity matrix
+-}
 eye : Int -> Matrix
 eye diagonal =
   Err "Not implemented"
 
+{-| Get an item at index (row, column)
+-}
 get : (Int, Int) -> Matrix -> Matrix
 get (r_index, c_index) a =
   case a of
@@ -157,12 +162,20 @@ equalSize a b =
   (numRows a == numRows b) && (numColumns a == numColumns b)
 
 {-| Checks if two matrices are equivalent
+Should I make it epsilon based?
 -}
 equivalent : Matrix -> Matrix -> Bool
 equivalent a b =
   case (a,b) of
     (Mat a_, Mat b_) ->
-      False
+      let
+          equal_size = equalSize a_ b_
+          equal_members = List.all ((==) True) <| List.map2 (==) a_.elements b_.elements
+      in
+      if equal_size && equal_members then
+         True
+       else
+         False
 
     _ ->
       False
@@ -182,6 +195,9 @@ forwardError error a b =
     (_, _) ->
       Err <| error ++ "\n\t Implement the correctly formed matrix branch."
 
+
+{-| Helper to take a Matrix and stringify its dimensions
+-}
 dimToString : Matnxn -> String
 dimToString a =
   let
