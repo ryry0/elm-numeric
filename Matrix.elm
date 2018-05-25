@@ -1,4 +1,4 @@
-module Matrix exposing (fromList, mul, sMul, prettyPrint, add, equivalent)
+module Matrix exposing (fromList, mul, sMul, prettyPrint, add, equivalent, from2DList)
 
 type alias Matnxn =
   {
@@ -37,9 +37,30 @@ fromList (rows, columns) elements =
   in
     Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
 
-from2dList : List (List Float) -> Matrix
-from2dList a =
-  Err "Not implemented"
+{-| Create a (n x m) matrix with inner lists being rows.
+The following is a 2 x 3 matrix:
+  matList = [
+    [2, 2, 2],
+    [3, 3, 3]
+  ]
+-}
+from2DList : List (List Float) -> Matrix
+from2DList a =
+  case List.head a of
+    Just data ->
+      let
+        columns = List.length <| data
+        rows = List.length a
+        -- check if all sublists are same length
+        is_correct = List.all ((==) columns) <| List.map List.length a
+      in
+      if is_correct then
+        fromList (rows, columns) <| List.concat a
+      else
+        Err <| "One or more of the sublist rows are malformed"
+
+    Nothing ->
+      Err <| "Empty List"
 
 mulCorrect : Matnxn -> Matnxn ->  Matrix
 mulCorrect a b =
