@@ -1,5 +1,19 @@
-module Matrix exposing (fromList, mul, sMul, prettyPrint, add, equivalent,
-  from2DList, sDiv)
+module Matrix exposing
+  ( fromList
+  , mul
+  , sMul
+  , prettyPrint
+  , add
+  , equivalent
+  , from2DList
+  , sDiv
+  , cvecFromList
+  , rvecFromList
+  , cvec
+  , rvec
+  , vec
+  , dot
+  )
 
 type alias Matnxn =
   {
@@ -68,11 +82,22 @@ from2DList a =
 -}
 cvecFromList : List Float -> Matrix
 cvecFromList a =
+  fromList (List.length a, 1) a
+
+cvec : List Float -> Matrix
+cvec = cvecFromList
+
+vec : List Float -> Matrix
+vec = cvec
 
 {-| Create a row vector from a list
 -}
 rvecFromList : List Float -> Matrix
 rvecFromList a =
+  fromList (1, List.length a) a
+
+rvec : List Float -> Matrix
+rvec = cvecFromList
 
 {-| Multiply two correctly formed matrices
 -}
