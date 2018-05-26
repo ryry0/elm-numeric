@@ -24,6 +24,8 @@ module Matrix
         , map
         , eye
         , transpose
+        , to2DList
+        , toFlatList
         )
 
 import Array
@@ -471,8 +473,8 @@ vcatBase a_ b_ =
 
 {-| Returns matrix as flat list
 -}
-toflatList : Matrix -> List Float
-toflatList n =
+toFlatList : Matrix -> List Float
+toFlatList n =
     case n of
         Mat n_ ->
             Array.toList n_.elements
