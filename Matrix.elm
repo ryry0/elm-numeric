@@ -23,6 +23,7 @@ module Matrix
         , cross
         , map
         , eye
+        , transpose
         )
 
 import Array
@@ -305,7 +306,24 @@ invert a =
 -}
 transpose : Matrix -> Matrix
 transpose a =
-    Err "Not implemented"
+    case a of
+        Mat a_ ->
+            let
+                f index =
+                    let
+                        mappedindex = (index % numRows a_)*(numColumns a_) +
+                            (index // numRows a_)
+                    in
+                    case Array.get mappedindex a_.elements of
+                        Just a ->
+                            a
+                        Nothing ->
+                            0
+            in
+            Array.initialize (numColumns a_ * numRows a_) f
+            |> fromArray (numColumns a_, numRows a_)
+        Err string ->
+            Err string
 
 {-| Get the determinant of a square matrix
 -}
@@ -599,6 +617,8 @@ check3dVec a =
     else
         False
 
+{-| Map2 for arrays
+-}
 arraymap2 : (a -> b -> c) -> Array.Array a -> Array.Array b -> Array.Array c
 arraymap2 f a b =
     if Array.isEmpty a || Array.isEmpty b then
