@@ -155,22 +155,22 @@ prettyPrintCorrect : Matnxn -> String
 prettyPrintCorrect a =
   let
       strings = List.map ((++) " ") <| List.map toString a.elements
-      structured_strings = takeRows (numColumns a) strings
+      structured_strings = make2D (numColumns a) strings
   in
      List.intersperse ["\n"] structured_strings
      |> List.concat
      |> List.foldr (++) ""
 
-takeRows : Int -> List a -> List (List a)
-takeRows numelem list =
+make2D : Int -> List a -> List (List a)
+make2D num_row_elem list =
   case list of
     [] ->
       []
     items ->
-      if List.length list < numelem then
+      if List.length list < num_row_elem then
          [list]
       else
-        List.take numelem list :: takeRows numelem (List.drop numelem list)
+        List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
 
 --takeColumns : Int -> List a -> List (List a)
 
@@ -178,7 +178,21 @@ takeRows numelem list =
 -}
 eye : Int -> Matrix
 eye diagonal =
-  Err "Not implemented"
+  case diagonal of
+    0 ->
+      from2DList []
+
+    1 ->
+      from2DList [[1]]
+
+    2 ->
+      from2DList [[1, 0], [0, 1]]
+
+    _ ->
+      Err "Not Implemented"
+
+
+
 
 {-| Get an item at index (row, column)
 -}
