@@ -2,7 +2,9 @@ module Matrix
     exposing
         ( fromList
         , from2DList
+        , fromString
         , mat
+        , mats
         , cvecFromList
         , rvecFromList
         , cvec
@@ -41,7 +43,7 @@ import Array
 
 # Creating matrices
 
-@docs fromList, from2DList, mat, cvec, rvec, vec, zeroes, ones, eye
+@docs fromList, from2DList, fromString, mat, cvec, rvec, vec, zeroes, ones, eye
 
 # Vector operations
 
@@ -137,15 +139,34 @@ from2DList a =
 
 {-| Create a (n x m) matrix with inner lists being rows.
 The following is a 2 x 3 matrix:
-matrix = Matrix.from2DList [
-[2, 2, 2],
-[3, 3, 3]
-]
+
+    matrix = Matrix.from2DList [
+        [2, 2, 2],
+        [3, 3, 3]
+        ]
 -}
 mat : List (List Float) -> Matrix
 mat =
     from2DList
 
+{-| Create a (n x m) matrix with inner lists being rows.
+In string format you can use Matlab/Julia-esque syntax.
+Spaces denote elements in a row.
+Semicolons denote elements in a column.
+The string must begin with [ and end with ].
+
+The following is a 2 x 3 matrix:
+
+    matrix = Matrix.fromString "[ 2 2 2; 3 3 3]"
+
+Any alpha/garbage characters will be set to zero.
+-}
+fromString : String -> Matrix
+fromString string =
+    from2DList <| matParser string
+
+mats : String -> Matrix
+mats = fromString
 
 {-| Create a column vector from a list
 -}
@@ -766,7 +787,18 @@ arraymap2 f a b =
         in
             Array.append result (arraymap2 f (dropArr a) (dropArr b))
 
-
+--string must be enclosed by brackets
+matParser : String -> List (List Float)
+matParser string =
+    if String.startsWith "[" string && String.endsWith "]" string then
+       String.dropLeft 1 string
+       |> String.dropRight 1
+       |> String.split ";"
+       |> List.map (String.split " ")
+       |> List.map (List.filter (\x -> not <|String.isEmpty x))
+       |> List.map (List.map (\x -> Result.withDefault 0 (String.toFloat x)))
+    else
+        []
 
 -- Operators for convenience
 
