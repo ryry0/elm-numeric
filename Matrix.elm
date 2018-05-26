@@ -187,11 +187,16 @@ eye diagonal =
 
 -- Operations
 
+{-| Multiply with error handling
+-}
+mul : Matrix -> Matrix -> Matrix
+mul a b =
+    forwardError "[function mul]" mulBase a b
 
 {-| Multiply two correctly formed matrices
 -}
-mulBasic : Matnxn -> Matnxn -> Matrix
-mulBasic a b =
+mulBase : Matnxn -> Matnxn -> Matrix
+mulBase a_ b_ =
     if numColumns a_ /= numRows b_ then
         let
             acolumns =
@@ -202,65 +207,54 @@ mulBasic a b =
         in
             Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
     else
-        Mat a
-
-
-{-| Multiply with error handling
--}
-mul : Matrix -> Matrix -> Matrix
-mul a b =
-    case ( a, b ) of
-        ( Mat a_, Mat b_ ) ->
-                mulBasic a_ b_
-
-        ( _, _ ) ->
-            forwardError "[function mul]" a b
-
+        Mat a_
 
 {-| Get an item at index (row, column)
 -}
 get : ( Int, Int ) -> Matrix -> Maybe Float
-get ( r_index, c_index ) a =
+get indices a =
     case a of
         Mat a_ ->
-            let
-                check_r_bounds =
-                    0 < r_index && r_index <= numRows a_
-
-                check_c_bounds =
-                    0 < c_index && c_index <= numColumns a_
-            in
-                if check_r_bounds && check_c_bounds then
-                    List.head <|
-                        List.drop ((r_index - 1) * (numColumns a_) + c_index - 1)
-                            a_.elements
-                else
-                    Nothing
+            getBase indices a_
 
         Err _ ->
             Nothing
 
+getBase : (Int, Int) -> Matnxn -> Maybe Float
+getBase ( r_index, c_index ) a_ =
+    let
+        check_r_bounds =
+            0 < r_index && r_index <= numRows a_
+
+        check_c_bounds =
+            0 < c_index && c_index <= numColumns a_
+    in
+        if check_r_bounds && check_c_bounds then
+            List.head <|
+                List.drop ((r_index - 1) * (numColumns a_) + c_index - 1)
+                    a_.elements
+        else
+            Nothing
 
 {-| Add two matrices of identical dimensions together
 -}
 add : Matrix -> Matrix -> Matrix
 add a b =
-    case ( a, b ) of
-        ( Mat a_, Mat b_ ) ->
-            if equalSize a_ b_ then
-                fromList ( numRows a_, numColumns a_ ) <| List.map2 (+) a_.elements b_.elements
-            else
-                let
-                    adims =
-                        dimToString a_
+    forwardError "[in add]" addBase a b
 
-                    bdims =
-                        dimToString b_
-                in
-                    Err <| "Matrices not equal size. a: " ++ adims ++ ", b: " ++ bdims
+addBase : Matnxn -> Matnxn -> Matrix
+addBase a_ b_ =
+    if equalSize a_ b_ then
+        fromList ( numRows a_, numColumns a_ ) <| List.map2 (+) a_.elements b_.elements
+    else
+        let
+            adims =
+                dimToString a_
 
-        ( _, _ ) ->
-            forwardError "[function add]" a b
+            bdims =
+                dimToString b_
+        in
+            Err <| "Matrices not equal size. a: " ++ adims ++ ", b: " ++ bdims
 
 {-| Map a function over all elements individually
 -}
@@ -343,49 +337,48 @@ a cross b
 -}
 cross : Matrix -> Matrix -> Matrix
 cross a b =
-    case ( a, b ) of
-        ( Mat a_, Mat b_ ) ->
-            if check3dVec a_ && check3dVec b_ then
-                let
-                    ax =
-                        get ( 1, 1 ) a
+    forwardError "[in cross]" crossBase a b
 
-                    ay =
-                        get ( 2, 1 ) a
+crossBase : Matnxn -> Matnxn -> Matrix
+crossBase a_ b_ =
+    if check3dVec a_ && check3dVec b_ then
+        let
+            ax =
+                getBase ( 1, 1 ) a_
 
-                    az =
-                        get ( 3, 1 ) a
+            ay =
+                getBase ( 2, 1 ) a_
 
-                    bx =
-                        get ( 1, 1 ) b
+            az =
+                getBase ( 3, 1 ) a_
 
-                    by =
-                        get ( 2, 1 ) b
+            bx =
+                getBase ( 1, 1 ) b_
 
-                    bz =
-                        get ( 3, 1 ) b
-                in
-                    case ( ax, ay, az, bx, by, bz ) of
-                        ( Just ax_, Just ay_, Just az_, Just bx_, Just by_, Just bz_ ) ->
-                            let
-                                i =
-                                    (ay_ * bz_) - (by_ * az_)
+            by =
+                getBase ( 2, 1 ) b_
 
-                                j =
-                                    -1 * ((ax_ * bz_) - (bx_ * az_))
+            bz =
+                getBase ( 3, 1 ) b_
+        in
+            case ( ax, ay, az, bx, by, bz ) of
+                ( Just ax_, Just ay_, Just az_, Just bx_, Just by_, Just bz_ ) ->
+                    let
+                        i =
+                            (ay_ * bz_) - (by_ * az_)
 
-                                k =
-                                    (ax_ * by_) - (bx_ * ay_)
-                            in
-                                vec <| [ i, j, k ]
+                        j =
+                            -1 * ((ax_ * bz_) - (bx_ * az_))
 
-                        ( _, _, _, _, _, _ ) ->
-                            Err "Computation Error"
-            else
-                Err "One or both vectors are malformed."
+                        k =
+                            (ax_ * by_) - (bx_ * ay_)
+                    in
+                        vec <| [ i, j, k ]
 
-        _ ->
-            forwardError "[function cross]" a b
+                ( _, _, _, _, _, _ ) ->
+                    Err "Computation Error"
+    else
+        Err "One or both vectors are malformed."
 
 
 {-| Checks if two matrices are of equal size
@@ -422,34 +415,31 @@ equivalent a b =
 -}
 vcat : Matrix -> Matrix -> Matrix
 vcat a b =
-    case ( a, b ) of
-        ( Mat a_, Mat b_ ) ->
-            let
-                acols =
-                    numColumns a_
+    forwardError "[in vcat]" vcatBase a b
 
-                bcols =
-                    numColumns b_
+vcatBase : Matnxn -> Matnxn -> Matrix
+vcatBase a_ b_ =
+    let
+        acols =
+            numColumns a_
 
-                arows =
-                    numRows a_
+        bcols =
+            numColumns b_
 
-                brows =
-                    numRows b_
-            in
-                if acols == bcols then
-                    fromList ( arows + brows, acols ) (List.append a_.elements b_.elements)
-                else
-                    Err <|
-                        "Number of columns are not equal: a: "
-                            ++ toString acols
-                            ++ " b: "
-                            ++ toString bcols
+        arows =
+            numRows a_
 
-        ( _, _ ) ->
-            forwardError "[function vcat]" a b
-
-
+        brows =
+            numRows b_
+    in
+        if acols == bcols then
+            fromList ( arows + brows, acols ) (List.append a_.elements b_.elements)
+        else
+            Err <|
+                "Number of columns are not equal: a: "
+                    ++ toString acols
+                    ++ " b: "
+                    ++ toString bcols
 
 toList : Matrix -> List Float
 toList a =
@@ -471,20 +461,20 @@ size n =
 {-| Helper to catch errors in functions of two variables (Matrix -> Matrix) ->
 Matrix
 -}
-forwardError : String -> Matrix -> Matrix -> Matrix
-forwardError error a b =
+forwardError : String -> (Matnxn -> Matnxn -> Matrix) -> Matrix -> Matrix -> Matrix
+forwardError error f a b =
     case ( a, b ) of
         ( Err string, Mat _ ) ->
-            Err <| error ++ "\n\t Matrix a: " ++ string
+            Err <| error ++ "\n Matrix a: " ++ string
 
         ( Mat _, Err string ) ->
-            Err <| error ++ "\n\t Matrix b: " ++ string
+            Err <| error ++ "\n Matrix b: " ++ string
 
         ( Err string, Err string2 ) ->
-            Err <| error ++ "\n\t Matrix a: " ++ string ++ "Matrix b: " ++ string2
+            Err <| error ++ "\n Matrix a: " ++ string ++ "Matrix b: " ++ string2
 
-        ( _, _ ) ->
-            Err <| error ++ "\n\t Implement the correctly formed matrix branch."
+        ( Mat a_, Mat b_ ) ->
+            f a_ b_
 
 
 {-| Helper to take a Matrix and stringify its dimensions
