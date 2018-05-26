@@ -22,6 +22,7 @@ module Matrix
         , ones
         , cross
         , map
+        , eye
         )
 
 import Array
@@ -181,20 +182,15 @@ zeroes ( rows, columns ) =
 -}
 eye : Int -> Matrix
 eye diagonal =
-    case diagonal of
-        0 ->
-            from2DList []
-
-        1 ->
-            from2DList [ [ 1 ] ]
-
-        2 ->
-            from2DList [ [ 1, 0 ], [ 0, 1 ] ]
-
-        _ ->
-            Err "Not Implemented"
-
-
+    let
+        gen x =
+            if x % (diagonal + 1) == 0 then
+               1
+            else
+               0
+    in
+    Array.initialize (diagonal * diagonal) gen
+    |> fromArray (diagonal, diagonal)
 
 -- Operations
 
