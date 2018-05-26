@@ -33,8 +33,15 @@ module Matrix
 import Array
 
 
-{-| A n x n matrix library.
+{-|
 
+A n x n matrix library.
+This library aims to be a reasonably complete suite of linear algebra tools.
+
+Some highlights are that this library has generic sized matrices,
+transposes, multiplication, and inversion.
+
+    import Matrix as Mt --and program away!
 
 # The matrix type
 
@@ -43,7 +50,7 @@ import Array
 
 # Creating matrices
 
-@docs fromList, from2DList, fromString, mat, cvec, rvec, vec, zeroes, ones, eye
+@docs fromList, from2DList, fromString, mat, mats, cvec, rvec, vec, zeroes, ones, eye
 
 # Vector operations
 
@@ -76,12 +83,15 @@ type Matrix
     | Err String
 
 
-
 -- Matrix Creation
-
 
 {-| Create a (n rows x m columns) matrix with the list as the elements.
 Fails if dimension mismatch. Elements need to be specified in row-major order.
+
+    matrix = Matrix.fromList (2, 3) [
+        [2, 2, 2],
+        [3, 3, 3]
+        ]
 -}
 fromList : ( Int, Int ) -> List Float -> Matrix
 fromList dimensions elements =
@@ -108,10 +118,11 @@ fromArray ( rows, columns ) elements =
 
 {-| Create a (n x m) matrix with inner lists being rows.
 The following is a 2 x 3 matrix:
-matrix = Matrix.from2DList [
-[2, 2, 2],
-[3, 3, 3]
-]
+
+    matrix = Matrix.from2DList [
+        [2, 2, 2],
+        [3, 3, 3]
+        ]
 -}
 from2DList : List (List Float) -> Matrix
 from2DList a =
@@ -238,12 +249,11 @@ eye diagonal =
         Array.initialize (diagonal * diagonal) gen
             |> fromArray ( diagonal, diagonal )
 
-
-
 -- Operations
 
+{-| Perform matrix multiplication
 
-{-| Multiply with error handling
+    A * B
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
@@ -714,10 +724,6 @@ prettyPrintBasic a =
         List.intersperse [ "\n" ] structured_strings
             |> List.concat
             |> List.foldr (++) ""
-
-
-
---takeColumns : Int -> List a -> List (List a)
 
 
 {-| Helper to re-2dify a flat matrix
