@@ -13,6 +13,7 @@ module Matrix exposing
   , rvec
   , vec
   , dot
+  , mat
   )
 
 type alias Matnxn =
@@ -54,7 +55,7 @@ fromList (rows, columns) elements =
 
 {-| Create a (n x m) matrix with inner lists being rows.
 The following is a 2 x 3 matrix:
-  matList = [
+  matrix = Matrix.from2DList [
     [2, 2, 2],
     [3, 3, 3]
   ]
@@ -77,6 +78,15 @@ from2DList a =
     Nothing ->
         fromList (0, 0) []
 
+{-| Create a (n x m) matrix with inner lists being rows.
+The following is a 2 x 3 matrix:
+  matrix = Matrix.from2DList [
+    [2, 2, 2],
+    [3, 3, 3]
+  ]
+-}
+mat : List (List Float) ->  Matrix
+mat = from2DList
 
 {-| Create a column vector from a list
 -}
@@ -84,9 +94,13 @@ cvecFromList : List Float -> Matrix
 cvecFromList a =
   fromList (List.length a, 1) a
 
+{-| Create a column vector from a list
+-}
 cvec : List Float -> Matrix
 cvec = cvecFromList
 
+{-| Create a column vector from a list
+-}
 vec : List Float -> Matrix
 vec = cvec
 
@@ -96,6 +110,8 @@ rvecFromList : List Float -> Matrix
 rvecFromList a =
   fromList (1, List.length a) a
 
+{-| Create a row vector from a list
+-}
 rvec : List Float -> Matrix
 rvec = cvecFromList
 
@@ -293,3 +309,8 @@ dimToString a =
         acols = toString <| numColumns a
   in
   "(" ++ arows ++ "," ++ acols ++ ")"
+
+vcat : Matrix -> Matrix
+vcat a =
+  Err "Not Implemented"
+
