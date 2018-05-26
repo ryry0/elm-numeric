@@ -192,8 +192,6 @@ eye diagonal =
       Err "Not Implemented"
 
 
-
-
 {-| Get an item at index (row, column)
 -}
 get : (Int, Int) -> Matrix -> Maybe Float
@@ -363,4 +361,21 @@ vcat a b =
 debugPrint : Matrix -> String
 debugPrint a =
   Debug.log (prettyPrint a) ""
+
+{-| Generate a random matrix
+-}
+rand : (Int, Int) -> Matrix
+rand a =
+  Err "Not Implemented"
+
+{-| Generate a matrix of ones
+-}
+ones : (Int, Int) -> Matrix
+ones a =
+  Err "Not Implemented"
+
+
+zeroes : (Int, Int) -> Matrix
+zeroes a =
+  Err "Not Implemented"
 
