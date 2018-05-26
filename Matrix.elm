@@ -49,7 +49,7 @@ type Matrix
 -- Matrix Creation
 
 
-{-| Create a (n x m) matrix with the list as the elements.
+{-| Create a (n rows x m columns) matrix with the list as the elements.
 Fails if dimension mismatch. Elements need to be specified in row-major order.
 -}
 fromList : ( Int, Int ) -> List Float -> Matrix
@@ -192,7 +192,17 @@ eye diagonal =
 -}
 mulBasic : Matnxn -> Matnxn -> Matrix
 mulBasic a b =
-    Mat a
+    if numColumns a_ /= numRows b_ then
+        let
+            acolumns =
+                toString <| numColumns a_
+
+            brows =
+                toString <| numRows b_
+        in
+            Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
+    else
+        Mat a
 
 
 {-| Multiply with error handling
@@ -201,16 +211,6 @@ mul : Matrix -> Matrix -> Matrix
 mul a b =
     case ( a, b ) of
         ( Mat a_, Mat b_ ) ->
-            if numColumns a_ /= numRows b_ then
-                let
-                    acolumns =
-                        toString <| numColumns a_
-
-                    brows =
-                        toString <| numRows b_
-                in
-                    Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
-            else
                 mulBasic a_ b_
 
         ( _, _ ) ->
@@ -262,18 +262,22 @@ add a b =
         ( _, _ ) ->
             forwardError "[function add]" a b
 
+{-| Map a function over all elements individually
+-}
+map : (Float -> Float) -> Matrix -> Matrix
+map f a =
+    case a of
+        Mat a_ ->
+            fromList ( numRows a_, numColumns a_ ) <| List.map f a_.elements
+
+        Err string ->
+            Err string
 
 {-| Perform scalar multiplication on a matrix
 -}
 sMul : Float -> Matrix -> Matrix
 sMul a b =
-    case b of
-        Mat b_ ->
-            fromList ( numRows b_, numColumns b_ ) <| List.map ((*) a) b_.elements
-
-        Err string ->
-            Err string
-
+    map ((*) a) b
 
 {-| Perform scalar division on a matrix
 -}
@@ -580,3 +584,7 @@ check3dVec a =
 (**) : Matrix -> Matrix -> Matrix
 (**) = mul
 
+{-| alias for add function
+-}
+(.+) : Matrix -> Matrix -> Matrix
+(.+) = add
