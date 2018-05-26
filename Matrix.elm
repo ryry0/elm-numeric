@@ -21,7 +21,10 @@ module Matrix
         , zeroes
         , ones
         , cross
+        , map
         )
+
+import Array
 
 {-| A n x n matrix library.
 # The matrix type
@@ -36,7 +39,7 @@ module Matrix
 
 type alias Matnxn =
     { dimensions : ( Int, Int )
-    , elements : List Float
+    , elements : Array.Array Float
     }
 
 
@@ -53,8 +56,15 @@ type Matrix
 Fails if dimension mismatch. Elements need to be specified in row-major order.
 -}
 fromList : ( Int, Int ) -> List Float -> Matrix
-fromList ( rows, columns ) elements =
-    if rows * columns == List.length elements then
+fromList dimensions elements =
+    fromArray dimensions <| Array.fromList elements
+
+{-| Create a (n rows x m columns) matrix with the list as the elements.
+Fails if dimension mismatch. Elements need to be specified in row-major order.
+-}
+fromArray : ( Int, Int ) -> Array.Array Float -> Matrix
+fromArray ( rows, columns ) elements =
+    if rows * columns == Array.length elements then
         Mat { dimensions = ( rows, columns ), elements = elements }
     else
         let
@@ -62,9 +72,10 @@ fromList ( rows, columns ) elements =
                 toString (rows * columns)
 
             numelements =
-                toString <| List.length elements
+                toString <| Array.length elements
         in
             Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
+
 
 
 {-| Create a (n x m) matrix with inner lists being rows.
@@ -156,14 +167,14 @@ rand a =
 -}
 ones : ( Int, Int ) -> Matrix
 ones ( rows, columns ) =
-    fromList ( rows, columns ) <| List.repeat (rows * columns) 1
+    fromArray ( rows, columns ) <| Array.repeat (rows * columns) 1.0
 
 
 {-| Generate a matrix of zeroes
 -}
 zeroes : ( Int, Int ) -> Matrix
 zeroes ( rows, columns ) =
-    fromList ( rows, columns ) <| List.repeat (rows * columns) 0
+    fromArray ( rows, columns ) <| Array.repeat (rows * columns) 0.0
 
 
 {-| Create an nxn identity matrix
@@ -191,7 +202,7 @@ eye diagonal =
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
-    forwardError "[function mul]" mulBase a b
+    forwardError "[in mul]" mulBase a b
 
 {-| Multiply two correctly formed matrices
 -}
@@ -230,8 +241,7 @@ getBase ( r_index, c_index ) a_ =
             0 < c_index && c_index <= numColumns a_
     in
         if check_r_bounds && check_c_bounds then
-            List.head <|
-                List.drop ((r_index - 1) * (numColumns a_) + c_index - 1)
+                Array.get ((r_index - 1) * (numColumns a_) + c_index - 1)
                     a_.elements
         else
             Nothing
@@ -245,7 +255,7 @@ add a b =
 addBase : Matnxn -> Matnxn -> Matrix
 addBase a_ b_ =
     if equalSize a_ b_ then
-        fromList ( numRows a_, numColumns a_ ) <| List.map2 (+) a_.elements b_.elements
+        fromArray ( numRows a_, numColumns a_ ) <| arraymap2 (+) a_.elements b_.elements
     else
         let
             adims =
@@ -262,7 +272,7 @@ map : (Float -> Float) -> Matrix -> Matrix
 map f a =
     case a of
         Mat a_ ->
-            fromList ( numRows a_, numColumns a_ ) <| List.map f a_.elements
+            fromArray ( numRows a_, numColumns a_ ) <| Array.map f a_.elements
 
         Err string ->
             Err string
@@ -324,7 +334,9 @@ dot a b =
                     (numRows a_) == (numRows b_)
             in
                 if a_is_vector && b_is_vector && same_length then
-                    Just <| List.sum <| List.map2 (*) a_.elements b_.elements
+                    arraymap2 (*) a_.elements b_.elements
+                    |> Array.foldr (+) 0
+                    |> Just
                 else
                     Nothing
 
@@ -400,7 +412,9 @@ equivalent a b =
                     equalSize a_ b_
 
                 equal_members =
-                    List.all ((==) True) <| List.map2 (==) a_.elements b_.elements
+                    arraymap2 (==) a_.elements b_.elements
+                    |> Array.toList
+                    |> List.all ((==) True)
             in
                 if equal_size && equal_members then
                     True
@@ -433,7 +447,7 @@ vcatBase a_ b_ =
             numRows b_
     in
         if acols == bcols then
-            fromList ( arows + brows, acols ) (List.append a_.elements b_.elements)
+            fromArray ( arows + brows, acols ) (Array.append a_.elements b_.elements)
         else
             Err <|
                 "Number of columns are not equal: a: "
@@ -441,19 +455,37 @@ vcatBase a_ b_ =
                     ++ " b: "
                     ++ toString bcols
 
-toList : Matrix -> List Float
-toList a =
-    []
+{-| Returns matrix as flat list
+-}
+toflatList : Matrix -> List Float
+toflatList n =
+    case n of
+        Mat n_ ->
+            Array.toList n_.elements
+        _ ->
+           []
 
-toListBasic :Matnxn -> List Float
-toListBasic a =
-    []
+{-| Returns matrix as 2d list.
+Returns empty list if Matrix is in error
+-}
+to2DList : Matrix -> List (List Float)
+to2DList n =
+    case n of
+        Mat n_ ->
+           make2D (numColumns n_) (Array.toList n_.elements)
+        _ ->
+           [[]]
 
 {-| Returns size of matrix
 -}
-size : Matnxn -> (Int, Int)
+size : Matrix -> (Int, Int)
 size n =
-    (0, 0)
+    case n of
+        Mat n_ ->
+            n_.dimensions
+        _ ->
+            (0,0)
+
 
 -- Auxiliary Functions
 
@@ -465,13 +497,13 @@ forwardError : String -> (Matnxn -> Matnxn -> Matrix) -> Matrix -> Matrix -> Mat
 forwardError error f a b =
     case ( a, b ) of
         ( Err string, Mat _ ) ->
-            Err <| error ++ "\n Matrix a: " ++ string
+            Err <| "\n" ++ error ++ " Matrix a: " ++ string
 
         ( Mat _, Err string ) ->
-            Err <| error ++ "\n Matrix b: " ++ string
+            Err <| "\n" ++ error ++ " Matrix b: " ++ string
 
         ( Err string, Err string2 ) ->
-            Err <| error ++ "\n Matrix a: " ++ string ++ "Matrix b: " ++ string2
+            Err <| "\n" ++ error ++ " Matrix a: " ++ string ++ "\n Matrix b: " ++ string2
 
         ( Mat a_, Mat b_ ) ->
             f a_ b_
@@ -509,7 +541,10 @@ prettyPrintBasic : Matnxn -> String
 prettyPrintBasic a =
     let
         strings =
-            List.map ((++) " ") <| List.map toString a.elements
+            a.elements
+            |> Array.toList
+            |> List.map toString
+            |> List.map ((++) " ")
 
         structured_strings =
             make2D (numColumns a) strings
@@ -567,6 +602,25 @@ check3dVec a =
         True
     else
         False
+
+arraymap2 : (a -> b -> c) -> Array.Array a -> Array.Array b -> Array.Array c
+arraymap2 f a b =
+    if Array.isEmpty a || Array.isEmpty b then
+        Array.fromList []
+    else
+    let
+        dropArr a =
+            Array.slice 1 (Array.length a) a
+
+        result =
+            case (Array.get 0 a, Array.get 0 b) of
+                (Just aval, Just bval) ->
+                    Array.fromList [f aval bval]
+                _ ->
+                    Array.fromList []
+
+    in
+        Array.append result (arraymap2 f (dropArr a) (dropArr b))
 
 -- Operators for convenience
 {-| Matrix multiply
