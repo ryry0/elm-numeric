@@ -20,7 +20,10 @@ module Matrix
         , get
         , zeroes
         , ones
+        , cross
         )
+
+-- TODO: Lookup numerical libarary, cross product of nxn vectors
 
 
 type alias Matnxn =
@@ -34,18 +37,8 @@ type Matrix
     | Err String
 
 
-{-| Get the number of rows in a matrix
--}
-numRows : Matnxn -> Int
-numRows a =
-    Tuple.first a.dimensions
 
-
-{-| Get the number of columns in a matrix
--}
-numColumns : Matnxn -> Int
-numColumns a =
-    Tuple.second a.dimensions
+-- Matrix Creation
 
 
 {-| Create a (n x m) matrix with the list as the elements.
@@ -144,6 +137,49 @@ rvec =
     cvecFromList
 
 
+{-| Generate a random matrix
+-}
+rand : ( Int, Int ) -> Matrix
+rand a =
+    Err "Not Implemented"
+
+
+{-| Generate a matrix of ones
+-}
+ones : ( Int, Int ) -> Matrix
+ones ( rows, columns ) =
+    fromList ( rows, columns ) <| List.repeat (rows * columns) 1
+
+
+{-| Generate a matrix of zeroes
+-}
+zeroes : ( Int, Int ) -> Matrix
+zeroes ( rows, columns ) =
+    fromList ( rows, columns ) <| List.repeat (rows * columns) 0
+
+
+{-| Create an nxn identity matrix
+-}
+eye : Int -> Matrix
+eye diagonal =
+    case diagonal of
+        0 ->
+            from2DList []
+
+        1 ->
+            from2DList [ [ 1 ] ]
+
+        2 ->
+            from2DList [ [ 1, 0 ], [ 0, 1 ] ]
+
+        _ ->
+            Err "Not Implemented"
+
+
+
+-- Operations
+
+
 {-| Multiply two correctly formed matrices
 -}
 mulCorrect : Matnxn -> Matnxn -> Matrix
@@ -171,47 +207,6 @@ mul a b =
 
         ( _, _ ) ->
             forwardError "[function mul]" a b
-
-
-prettyPrint : Matrix -> String
-prettyPrint a =
-    case a of
-        Mat mat ->
-            prettyPrintCorrect mat
-
-        Err string ->
-            string
-
-
-prettyPrintCorrect : Matnxn -> String
-prettyPrintCorrect a =
-    let
-        strings =
-            List.map ((++) " ") <| List.map toString a.elements
-
-        structured_strings =
-            make2D (numColumns a) strings
-    in
-        List.intersperse [ "\n" ] structured_strings
-            |> List.concat
-            |> List.foldr (++) ""
-
-
-make2D : Int -> List a -> List (List a)
-make2D num_row_elem list =
-    case list of
-        [] ->
-            []
-
-        items ->
-            if List.length list < num_row_elem then
-                [ list ]
-            else
-                List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
-
-
-
---takeColumns : Int -> List a -> List (List a)
 
 
 {-| Get an item at index (row, column)
@@ -289,7 +284,7 @@ transpose a =
     Err "Not implemented"
 
 
-{-| Performs the dot product of two vectors
+{-| Performs the dot product of two nxn vectors
 -}
 dot : Matrix -> Matrix -> Maybe Float
 dot a b =
@@ -318,9 +313,54 @@ dot a b =
 -- is there a way to do good scalar error handling?
 
 
-cross : Matrix -> Matrix
-cross a =
-    Err "Not implemented"
+{-| Get the cross product of two 3d vectors
+a cross b
+-}
+cross : Matrix -> Matrix -> Matrix
+cross a b =
+    case ( a, b ) of
+        ( Mat a_, Mat b_ ) ->
+            if check3dVec a_ && check3dVec b_ then
+                let
+                    ax =
+                        get ( 1, 1 ) a
+
+                    ay =
+                        get ( 2, 1 ) a
+
+                    az =
+                        get ( 3, 1 ) a
+
+                    bx =
+                        get ( 1, 1 ) b
+
+                    by =
+                        get ( 2, 1 ) b
+
+                    bz =
+                        get ( 3, 1 ) b
+                in
+                    case ( ax, ay, az, bx, by, bz ) of
+                        ( Just ax_, Just ay_, Just az_, Just bx_, Just by_, Just bz_ ) ->
+                            let
+                                i =
+                                    (ay_ * bz_) - (by_ * az_)
+
+                                j =
+                                    -1 * ((ax_ * bz_) - (bx_ * az_))
+
+                                k =
+                                    (ax_ * by_) - (bx_ * ay_)
+                            in
+                                vec <| [ i, j, k ]
+
+                        ( _, _, _, _, _, _ ) ->
+                            Err "Computation Error"
+            else
+                Err "One or both vectors are malformed."
+
+        _ ->
+            forwardError "[function cross]" a b
 
 
 {-| Checks if two matrices are of equal size
@@ -351,6 +391,42 @@ equivalent a b =
 
         _ ->
             False
+
+
+{-| Concatenate two matrices vertically.
+-}
+vcat : Matrix -> Matrix -> Matrix
+vcat a b =
+    case ( a, b ) of
+        ( Mat a_, Mat b_ ) ->
+            let
+                acols =
+                    numColumns a_
+
+                bcols =
+                    numColumns b_
+
+                arows =
+                    numRows a_
+
+                brows =
+                    numRows b_
+            in
+                if acols == bcols then
+                    fromList ( arows + brows, acols ) (List.append a_.elements b_.elements)
+                else
+                    Err <|
+                        "Number of columns are not equal: a: "
+                            ++ toString acols
+                            ++ " b: "
+                            ++ toString bcols
+
+        ( _, _ ) ->
+            forwardError "[function vcat]" a b
+
+
+
+-- Auxiliary Functions
 
 
 {-| Helper to catch errors in functions of two variables (Matrix -> Matrix) ->
@@ -386,36 +462,51 @@ dimToString a =
         "(" ++ arows ++ "," ++ acols ++ ")"
 
 
-{-| Concatenate two matrices vertically.
+{-| Change matrix into string form
 -}
-vcat : Matrix -> Matrix -> Matrix
-vcat a b =
-    case ( a, b ) of
-        ( Mat a_, Mat b_ ) ->
-            let
-                acols =
-                    numColumns a_
+prettyPrint : Matrix -> String
+prettyPrint a =
+    case a of
+        Mat mat ->
+            prettyPrintCorrect mat
 
-                bcols =
-                    numColumns b_
+        Err string ->
+            string
 
-                arows =
-                    numRows a_
 
-                brows =
-                    numRows b_
-            in
-                if acols == bcols then
-                    fromList ( arows + brows, acols ) (List.append a_.elements b_.elements)
-                else
-                    Err <|
-                        "Number of columns are not equal: a: "
-                            ++ toString acols
-                            ++ " b: "
-                            ++ toString bcols
+{-| Change correctly formed matrix into string form
+-}
+prettyPrintCorrect : Matnxn -> String
+prettyPrintCorrect a =
+    let
+        strings =
+            List.map ((++) " ") <| List.map toString a.elements
 
-        ( _, _ ) ->
-            forwardError "[function vcat]" a b
+        structured_strings =
+            make2D (numColumns a) strings
+    in
+        List.intersperse [ "\n" ] structured_strings
+            |> List.concat
+            |> List.foldr (++) ""
+
+
+
+--takeColumns : Int -> List a -> List (List a)
+
+
+{-| Helper to re-2dify a flat matrix
+-}
+make2D : Int -> List a -> List (List a)
+make2D num_row_elem list =
+    case list of
+        [] ->
+            []
+
+        items ->
+            if List.length list < num_row_elem then
+                [ list ]
+            else
+                List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
 
 
 {-| Helper to debug print
@@ -425,44 +516,25 @@ debugPrint a =
     Debug.log (prettyPrint a) ""
 
 
-
--- Matrix generation utilities
-
-
-{-| Generate a random matrix
+{-| Get the number of rows in a matrix
 -}
-rand : ( Int, Int ) -> Matrix
-rand a =
-    Err "Not Implemented"
+numRows : Matnxn -> Int
+numRows a =
+    Tuple.first a.dimensions
 
 
-{-| Generate a matrix of ones
+{-| Get the number of columns in a matrix
 -}
-ones : ( Int, Int ) -> Matrix
-ones ( rows, columns ) =
-    fromList ( rows, columns ) <| List.repeat (rows * columns) 1
+numColumns : Matnxn -> Int
+numColumns a =
+    Tuple.second a.dimensions
 
 
-{-| Generate a matrix of zeroes
+{-| Check if the matrix is a 3d vector
 -}
-zeroes : ( Int, Int ) -> Matrix
-zeroes ( rows, columns ) =
-    fromList ( rows, columns ) <| List.repeat (rows * columns) 0
-
-
-{-| Create an nxn identity matrix
--}
-eye : Int -> Matrix
-eye diagonal =
-    case diagonal of
-        0 ->
-            from2DList []
-
-        1 ->
-            from2DList [ [ 1 ] ]
-
-        2 ->
-            from2DList [ [ 1, 0 ], [ 0, 1 ] ]
-
-        _ ->
-            Err "Not Implemented"
+check3dVec : Matnxn -> Bool
+check3dVec a =
+    if numRows a == 3 && numColumns a == 1 then
+        True
+    else
+        False
