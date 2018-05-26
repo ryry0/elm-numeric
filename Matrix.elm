@@ -528,11 +528,10 @@ equalSize a b =
     (numRows a == numRows b) && (numColumns a == numColumns b)
 
 
-{-| Checks if two matrices are equivalent
-Should I make it epsilon based?
+{-| Checks if two matrices are equivalent within some epsilon
 -}
-equivalent : Matrix -> Matrix -> Bool
-equivalent a b =
+equivalent : Matrix -> Matrix -> Float -> Bool
+equivalent a b epsilon =
     case ( a, b ) of
         ( Mat a_, Mat b_ ) ->
             let
@@ -540,7 +539,8 @@ equivalent a b =
                     equalSize a_ b_
 
                 equal_members =
-                    arraymap2 (==) a_.elements b_.elements
+                    arraymap2 (-) a_.elements b_.elements
+                        |> Array.map (\x -> abs x < epsilon)
                         |> Array.toList
                         |> List.all ((==) True)
             in
