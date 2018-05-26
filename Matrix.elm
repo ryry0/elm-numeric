@@ -3,6 +3,7 @@ module Matrix exposing
   , mul
   , sMul
   , prettyPrint
+  , debugPrint
   , add
   , equivalent
   , from2DList
@@ -14,6 +15,7 @@ module Matrix exposing
   , vec
   , dot
   , mat
+  , vcat
   )
 
 type alias Matnxn =
@@ -310,7 +312,30 @@ dimToString a =
   in
   "(" ++ arows ++ "," ++ acols ++ ")"
 
-vcat : Matrix -> Matrix
-vcat a =
-  Err "Not Implemented"
+vcat : Matrix -> Matrix -> Matrix
+vcat a b =
+  case (a, b) of
+    (Mat a_, Mat b_) ->
+    let
+        acols = numColumns a_
+        bcols = numColumns b_
+        arows = numRows a_
+        brows = numRows b_
+    in
+      if acols == bcols then
+         fromList (arows + brows, acols) (List.append a_.elements b_.elements)
+      else
+        Err <| "Number of columns are not equal: a: " ++ toString acols ++ " b: " ++
+          toString bcols
+
+    (_, _) ->
+      forwardError "[function vcat]" a b
+
+
+
+{-| Helper to debug print
+-}
+debugPrint : Matrix -> String
+debugPrint a =
+  Debug.log (prettyPrint a) ""
 
