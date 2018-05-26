@@ -388,7 +388,7 @@ crossBase a_ b_ =
                         vec <| [ i, j, k ]
 
                 ( _, _, _, _, _, _ ) ->
-                    Err "Computation Error"
+                    Err "One or more elements are missing, possible malformed vector"
     else
         Err "One or both vectors are malformed."
 
