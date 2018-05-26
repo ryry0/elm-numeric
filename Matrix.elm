@@ -23,8 +23,16 @@ module Matrix
         , cross
         )
 
--- TODO: Lookup numerical libarary, cross product of nxn vectors
+{-| A n x n matrix library.
+# The matrix type
 
+@docs Matrix
+
+# Creating matrices
+
+@docs fromList, from2DList, mat, cvec, rvec, vec
+
+-}
 
 type alias Matnxn =
     { dimensions : ( Int, Int )
@@ -182,8 +190,8 @@ eye diagonal =
 
 {-| Multiply two correctly formed matrices
 -}
-mulCorrect : Matnxn -> Matnxn -> Matrix
-mulCorrect a b =
+mulBasic : Matnxn -> Matnxn -> Matrix
+mulBasic a b =
     Mat a
 
 
@@ -203,7 +211,7 @@ mul a b =
                 in
                     Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
             else
-                mulCorrect a_ b_
+                mulBasic a_ b_
 
         ( _, _ ) ->
             forwardError "[function mul]" a b
@@ -274,15 +282,32 @@ sDiv a b =
     sMul (1 / a) b
 
 
+{-| Invert a square matrix
+-}
 invert : Matrix -> Matrix
 invert a =
-    Err "Not implemented"
+    case a of
+        Mat a_ ->
+            if numRows a_ == numColumns a_ then
+                Err "Not Implemented"
+            else
+               Err "Matrix is not square"
+
+        Err string ->
+            Err string
 
 
+{-| Transpose a matrix
+-}
 transpose : Matrix -> Matrix
 transpose a =
     Err "Not implemented"
 
+{-| Get the determinant of a square matrix
+-}
+determinant : Matrix -> Maybe Float
+determinant a =
+    Nothing
 
 {-| Performs the dot product of two nxn vectors
 -}
@@ -306,11 +331,7 @@ dot a b =
                     Nothing
 
         ( _, _ ) ->
-            Nothing
-
-
-
--- is there a way to do good scalar error handling?
+            Nothing -- is there a way to do good scalar error handling?
 
 
 {-| Get the cross product of two 3d vectors
@@ -426,6 +447,20 @@ vcat a b =
 
 
 
+toList : Matrix -> List Float
+toList a =
+    []
+
+toListBasic :Matnxn -> List Float
+toListBasic a =
+    []
+
+{-| Returns size of matrix
+-}
+size : Matnxn -> (Int, Int)
+size n =
+    (0, 0)
+
 -- Auxiliary Functions
 
 
@@ -468,7 +503,7 @@ prettyPrint : Matrix -> String
 prettyPrint a =
     case a of
         Mat mat ->
-            prettyPrintCorrect mat
+            prettyPrintBasic mat
 
         Err string ->
             string
@@ -476,8 +511,8 @@ prettyPrint a =
 
 {-| Change correctly formed matrix into string form
 -}
-prettyPrintCorrect : Matnxn -> String
-prettyPrintCorrect a =
+prettyPrintBasic : Matnxn -> String
+prettyPrintBasic a =
     let
         strings =
             List.map ((++) " ") <| List.map toString a.elements
@@ -538,3 +573,10 @@ check3dVec a =
         True
     else
         False
+
+-- Operators for convenience
+{-| Matrix multiply
+-}
+(**) : Matrix -> Matrix -> Matrix
+(**) = mul
+
