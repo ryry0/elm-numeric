@@ -154,7 +154,7 @@ rvecFromList a =
 -}
 rvec : List Float -> Matrix
 rvec =
-    cvecFromList
+    rvecFromList
 
 
 {-| Generate a random matrix
