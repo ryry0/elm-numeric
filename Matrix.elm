@@ -30,17 +30,20 @@ module Matrix
 
 import Array
 
+
 {-| A n x n matrix library.
+
+
 # The matrix type
 
 @docs Matrix
+
 
 # Creating matrices
 
 @docs fromList, from2DList, mat, cvec, rvec, vec
 
 -}
-
 type alias Matnxn =
     { dimensions : ( Int, Int )
     , elements : Array.Array Float
@@ -63,6 +66,7 @@ fromList : ( Int, Int ) -> List Float -> Matrix
 fromList dimensions elements =
     fromArray dimensions <| Array.fromList elements
 
+
 {-| Create a (n rows x m columns) matrix with the list as the elements.
 Fails if dimension mismatch. Elements need to be specified in row-major order.
 -}
@@ -79,7 +83,6 @@ fromArray ( rows, columns ) elements =
                 toString <| Array.length elements
         in
             Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
-
 
 
 {-| Create a (n x m) matrix with inner lists being rows.
@@ -188,14 +191,17 @@ eye diagonal =
     let
         gen x =
             if x % (diagonal + 1) == 0 then
-               1
+                1
             else
-               0
+                0
     in
-    Array.initialize (diagonal * diagonal) gen
-    |> fromArray (diagonal, diagonal)
+        Array.initialize (diagonal * diagonal) gen
+            |> fromArray ( diagonal, diagonal )
+
+
 
 -- Operations
+
 
 {-| Multiply with error handling
 -}
@@ -203,9 +209,12 @@ mul : Matrix -> Matrix -> Matrix
 mul a b =
     forwardError "[in mul]" mulList a b
 
+
 mulArray : Matnxn -> Matnxn -> Matrix
 mulArray a_ b_ =
     Err "Not Implemented"
+
+
 
 {--
     if numColumns a_ /= numRows b_ then
@@ -259,21 +268,27 @@ mulList a_ b_ =
         in
             Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
     else
-    let
-        a_list = to2DListBase a_
-        b_list = to2DList <| transposeBase b_
-        collapse x y =
-            List.sum <| List.map2 (*) x y --element level
+        let
+            a_list =
+                to2DListBase a_
 
-        constructList x y =
-            case x of
-                [] ->
-                    []
-                m :: ms ->
-                    List.map (collapse m) y :: constructList (List.drop 1 x) y
+            b_list =
+                to2DList <| transposeBase b_
 
-    in
-       from2DList <| constructList a_list b_list
+            collapse x y =
+                List.sum <| List.map2 (*) x y
+
+            --element level
+            constructList x y =
+                case x of
+                    [] ->
+                        []
+
+                    m :: ms ->
+                        List.map (collapse m) y :: constructList (List.drop 1 x) y
+        in
+            from2DList <| constructList a_list b_list
+
 
 {-| Get an item at index (row, column)
 -}
@@ -286,7 +301,8 @@ get indices a =
         Err _ ->
             Nothing
 
-getBase : (Int, Int) -> Matnxn -> Maybe Float
+
+getBase : ( Int, Int ) -> Matnxn -> Maybe Float
 getBase ( r_index, c_index ) a_ =
     let
         check_r_bounds =
@@ -296,16 +312,18 @@ getBase ( r_index, c_index ) a_ =
             0 < c_index && c_index <= numColumns a_
     in
         if check_r_bounds && check_c_bounds then
-                Array.get ((r_index - 1) * (numColumns a_) + c_index - 1)
-                    a_.elements
+            Array.get ((r_index - 1) * (numColumns a_) + c_index - 1)
+                a_.elements
         else
             Nothing
+
 
 {-| Add two matrices of identical dimensions together
 -}
 add : Matrix -> Matrix -> Matrix
 add a b =
     forwardError "[in add]" addBase a b
+
 
 addBase : Matnxn -> Matnxn -> Matrix
 addBase a_ b_ =
@@ -321,6 +339,7 @@ addBase a_ b_ =
         in
             Err <| "Matrices not equal size. a: " ++ adims ++ ", b: " ++ bdims
 
+
 {-| Map a function over all elements individually
 -}
 map : (Float -> Float) -> Matrix -> Matrix
@@ -332,11 +351,13 @@ map f a =
         Err string ->
             Err string
 
+
 {-| Perform scalar multiplication on a matrix
 -}
 sMul : Float -> Matrix -> Matrix
 sMul a b =
     map ((*) a) b
+
 
 {-| Perform scalar division on a matrix
 -}
@@ -354,7 +375,7 @@ invert a =
             if numRows a_ == numColumns a_ then
                 Err "Not Implemented"
             else
-               Err "Matrix is not square"
+                Err "Matrix is not square"
 
         Err string ->
             Err string
@@ -367,31 +388,38 @@ transpose a =
     case a of
         Mat a_ ->
             transposeBase a_
+
         Err string ->
             Err string
+
 
 transposeBase : Matnxn -> Matrix
 transposeBase a_ =
     let
         f index =
             let
-                mappedindex = (index % numRows a_)*(numColumns a_) +
-                    (index // numRows a_)
+                mappedindex =
+                    (index % numRows a_)
+                        * (numColumns a_)
+                        + (index // numRows a_)
             in
-            case Array.get mappedindex a_.elements of
-                Just a ->
-                    a
-                Nothing ->
-                    0
+                case Array.get mappedindex a_.elements of
+                    Just a ->
+                        a
+
+                    Nothing ->
+                        0
     in
-    Array.initialize (numColumns a_ * numRows a_) f
-    |> fromArray (numColumns a_, numRows a_)
+        Array.initialize (numColumns a_ * numRows a_) f
+            |> fromArray ( numColumns a_, numRows a_ )
+
 
 {-| Get the determinant of a square matrix
 -}
 determinant : Matrix -> Maybe Float
 determinant a =
     Nothing
+
 
 {-| Performs the dot product of two nxn vectors
 -}
@@ -411,13 +439,17 @@ dot a b =
             in
                 if a_is_vector && b_is_vector && same_length then
                     arraymap2 (*) a_.elements b_.elements
-                    |> Array.foldr (+) 0
-                    |> Just
+                        |> Array.foldr (+) 0
+                        |> Just
                 else
                     Nothing
 
         ( _, _ ) ->
-            Nothing -- is there a way to do good scalar error handling?
+            Nothing
+
+
+
+-- is there a way to do good scalar error handling?
 
 
 {-| Get the cross product of two 3d vectors
@@ -426,6 +458,7 @@ a cross b
 cross : Matrix -> Matrix -> Matrix
 cross a b =
     forwardError "[in cross]" crossBase a b
+
 
 crossBase : Matnxn -> Matnxn -> Matrix
 crossBase a_ b_ =
@@ -489,8 +522,8 @@ equivalent a b =
 
                 equal_members =
                     arraymap2 (==) a_.elements b_.elements
-                    |> Array.toList
-                    |> List.all ((==) True)
+                        |> Array.toList
+                        |> List.all ((==) True)
             in
                 if equal_size && equal_members then
                     True
@@ -506,6 +539,7 @@ equivalent a b =
 vcat : Matrix -> Matrix -> Matrix
 vcat a b =
     forwardError "[in vcat]" vcatBase a b
+
 
 vcatBase : Matnxn -> Matnxn -> Matrix
 vcatBase a_ b_ =
@@ -531,6 +565,7 @@ vcatBase a_ b_ =
                     ++ " b: "
                     ++ toString bcols
 
+
 {-| Returns matrix as flat list
 -}
 toFlatList : Matrix -> List Float
@@ -538,8 +573,10 @@ toFlatList n =
     case n of
         Mat n_ ->
             Array.toList n_.elements
+
         _ ->
-           []
+            []
+
 
 {-| Returns matrix as 2d list.
 Returns empty list if Matrix is in error
@@ -549,22 +586,27 @@ to2DList n =
     case n of
         Mat n_ ->
             to2DListBase n_
+
         _ ->
-           [[]]
+            [ [] ]
+
 
 to2DListBase : Matnxn -> List (List Float)
 to2DListBase z =
     make2D (numColumns z) (Array.toList z.elements)
 
+
 {-| Returns size of matrix
 -}
-size : Matrix -> (Int, Int)
+size : Matrix -> ( Int, Int )
 size n =
     case n of
         Mat n_ ->
             n_.dimensions
+
         _ ->
-            (0,0)
+            ( 0, 0 )
+
 
 
 -- Auxiliary Functions
@@ -622,9 +664,9 @@ prettyPrintBasic a =
     let
         strings =
             a.elements
-            |> Array.toList
-            |> List.map toString
-            |> List.map ((++) " ")
+                |> Array.toList
+                |> List.map toString
+                |> List.map ((++) " ")
 
         structured_strings =
             make2D (numColumns a) strings
@@ -683,6 +725,7 @@ check3dVec a =
     else
         False
 
+
 {-| Map2 for arrays
 -}
 arraymap2 : (a -> b -> c) -> Array.Array a -> Array.Array b -> Array.Array c
@@ -690,27 +733,34 @@ arraymap2 f a b =
     if Array.isEmpty a || Array.isEmpty b then
         Array.fromList []
     else
-    let
-        dropArr a =
-            Array.slice 1 (Array.length a) a
+        let
+            dropArr a =
+                Array.slice 1 (Array.length a) a
 
-        result =
-            case (Array.get 0 a, Array.get 0 b) of
-                (Just aval, Just bval) ->
-                    Array.fromList [f aval bval]
-                _ ->
-                    Array.fromList []
+            result =
+                case ( Array.get 0 a, Array.get 0 b ) of
+                    ( Just aval, Just bval ) ->
+                        Array.fromList [ f aval bval ]
 
-    in
-        Array.append result (arraymap2 f (dropArr a) (dropArr b))
+                    _ ->
+                        Array.fromList []
+        in
+            Array.append result (arraymap2 f (dropArr a) (dropArr b))
+
+
 
 -- Operators for convenience
+
+
 {-| Matrix multiply
 -}
 (**) : Matrix -> Matrix -> Matrix
-(**) = mul
+(**) =
+    mul
+
 
 {-| alias for add function
 -}
 (.+) : Matrix -> Matrix -> Matrix
-(.+) = add
+(.+) =
+    add
