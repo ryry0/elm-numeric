@@ -16,6 +16,7 @@ module Matrix exposing
   , dot
   , mat
   , vcat
+  , get
   )
 
 type alias Matnxn =
@@ -181,14 +182,22 @@ eye diagonal =
 
 {-| Get an item at index (row, column)
 -}
-get : (Int, Int) -> Matrix -> Matrix
+get : (Int, Int) -> Matrix -> Maybe Float
 get (r_index, c_index) a =
   case a of
     Mat a_ ->
-      Err "Not implemented"
+      let
+          check_r_bounds = 0 < r_index && r_index <= numRows a_
+          check_c_bounds = 0 < c_index && c_index <= numColumns a_
+      in
+      if  check_r_bounds && check_c_bounds then
+        List.head <| List.drop ( (r_index - 1) * (numColumns a_) + c_index - 1 )
+          a_.elements
+      else
+        Nothing
 
-    Err string ->
-      Err string
+    Err _ ->
+      Nothing
 
 {-| Add two matrices of identical dimensions together
 -}
@@ -312,6 +321,8 @@ dimToString a =
   in
   "(" ++ arows ++ "," ++ acols ++ ")"
 
+{-| Concatenate two matrices vertically.
+-}
 vcat : Matrix -> Matrix -> Matrix
 vcat a b =
   case (a, b) of
