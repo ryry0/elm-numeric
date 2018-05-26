@@ -1,29 +1,29 @@
 module Matrix
     exposing
         ( fromList
-        , mul
-        , sMul
-        , prettyPrint
-        , debugPrint
-        , add
-        , equivalent
         , from2DList
-        , sDiv
+        , mat
         , cvecFromList
         , rvecFromList
         , cvec
         , rvec
-        , vec
-        , dot
-        , mat
-        , vcat
-        , get
         , zeroes
         , ones
-        , cross
-        , map
         , eye
+        , vec
+        , dot
+        , cross
+        , sMul
+        , sDiv
+        , equivalent
+        , add
+        , get
+        , map
+        , mul
+        , vcat
         , transpose
+        , prettyPrint
+        , debugPrint
         , to2DList
         , toFlatList
         )
@@ -41,8 +41,27 @@ import Array
 
 # Creating matrices
 
-@docs fromList, from2DList, mat, cvec, rvec, vec
+@docs fromList, from2DList, mat, cvec, rvec, vec, zeroes, ones, eye
 
+# Vector operations
+
+@docs cross, dot
+
+# Matrix element-wise operations
+
+@docs add, equivalent, sMul, sDiv, map
+
+# Matrix operations
+
+@docs mul, vcat, get, transpose
+
+# Matrix display
+
+@docs prettyPrint, debugPrint
+
+# Interop
+
+@docs to2DList, toFlatList
 -}
 type alias Matnxn =
     { dimensions : ( Int, Int )
