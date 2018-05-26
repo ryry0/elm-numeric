@@ -201,12 +201,13 @@ eye diagonal =
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
-    forwardError "[in mul]" mulBase a b
+    forwardError "[in mul]" mulList a b
 
-{-| Multiply two correctly formed matrices
--}
-mulBase : Matnxn -> Matnxn -> Matrix
-mulBase a_ b_ =
+mulArray : Matnxn -> Matnxn -> Matrix
+mulArray a_ b_ =
+    Err "Not Implemented"
+
+{--
     if numColumns a_ /= numRows b_ then
         let
             acolumns =
@@ -215,9 +216,64 @@ mulBase a_ b_ =
             brows =
                 toString <| numRows b_
         in
-            Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ "b.rows = " ++ brows ++ "."
+            Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
     else
-        Mat a_
+    let
+        a_arr = a_.elements
+            let
+                array =
+                    case transposeBase b_ of
+                        Mat t_ ->
+                            t_.elements
+                        _ ->
+                            Array.fromList []
+            in
+        b_arr = array
+        collapse x y =
+            Array.foldr (+) 0  <| arraymap2 (*) x y --element level
+
+        constructList x y =
+            case x of
+                [] ->
+                    []
+                m :: ms ->
+                    List.map (collapse m) y :: constructList (List.drop 1 x) y
+
+    in
+       from2DList <| constructList a_list b_list
+       --}
+
+
+{-| Implementation of multiplication using lists.
+Probably slow.
+-}
+mulList : Matnxn -> Matnxn -> Matrix
+mulList a_ b_ =
+    if numColumns a_ /= numRows b_ then
+        let
+            acolumns =
+                toString <| numColumns a_
+
+            brows =
+                toString <| numRows b_
+        in
+            Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
+    else
+    let
+        a_list = to2DListBase a_
+        b_list = to2DList <| transposeBase b_
+        collapse x y =
+            List.sum <| List.map2 (*) x y --element level
+
+        constructList x y =
+            case x of
+                [] ->
+                    []
+                m :: ms ->
+                    List.map (collapse m) y :: constructList (List.drop 1 x) y
+
+    in
+       from2DList <| constructList a_list b_list
 
 {-| Get an item at index (row, column)
 -}
@@ -310,22 +366,26 @@ transpose : Matrix -> Matrix
 transpose a =
     case a of
         Mat a_ ->
-            let
-                f index =
-                    let
-                        mappedindex = (index % numRows a_)*(numColumns a_) +
-                            (index // numRows a_)
-                    in
-                    case Array.get mappedindex a_.elements of
-                        Just a ->
-                            a
-                        Nothing ->
-                            0
-            in
-            Array.initialize (numColumns a_ * numRows a_) f
-            |> fromArray (numColumns a_, numRows a_)
+            transposeBase a_
         Err string ->
             Err string
+
+transposeBase : Matnxn -> Matrix
+transposeBase a_ =
+    let
+        f index =
+            let
+                mappedindex = (index % numRows a_)*(numColumns a_) +
+                    (index // numRows a_)
+            in
+            case Array.get mappedindex a_.elements of
+                Just a ->
+                    a
+                Nothing ->
+                    0
+    in
+    Array.initialize (numColumns a_ * numRows a_) f
+    |> fromArray (numColumns a_, numRows a_)
 
 {-| Get the determinant of a square matrix
 -}
@@ -488,9 +548,13 @@ to2DList : Matrix -> List (List Float)
 to2DList n =
     case n of
         Mat n_ ->
-           make2D (numColumns n_) (Array.toList n_.elements)
+            to2DListBase n_
         _ ->
            [[]]
+
+to2DListBase : Matnxn -> List (List Float)
+to2DListBase z =
+    make2D (numColumns z) (Array.toList z.elements)
 
 {-| Returns size of matrix
 -}
