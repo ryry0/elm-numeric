@@ -17,6 +17,8 @@ module Matrix exposing
   , mat
   , vcat
   , get
+  , zeroes
+  , ones
   )
 
 type alias Matnxn =
@@ -173,23 +175,6 @@ make2D num_row_elem list =
         List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
 
 --takeColumns : Int -> List a -> List (List a)
-
-{-| Create an nxn identity matrix
--}
-eye : Int -> Matrix
-eye diagonal =
-  case diagonal of
-    0 ->
-      from2DList []
-
-    1 ->
-      from2DList [[1]]
-
-    2 ->
-      from2DList [[1, 0], [0, 1]]
-
-    _ ->
-      Err "Not Implemented"
 
 
 {-| Get an item at index (row, column)
@@ -362,6 +347,8 @@ debugPrint : Matrix -> String
 debugPrint a =
   Debug.log (prettyPrint a) ""
 
+-- Matrix generation utilities
+
 {-| Generate a random matrix
 -}
 rand : (Int, Int) -> Matrix
@@ -371,11 +358,29 @@ rand a =
 {-| Generate a matrix of ones
 -}
 ones : (Int, Int) -> Matrix
-ones a =
-  Err "Not Implemented"
+ones (rows, columns) =
+  fromList (rows, columns) <| List.repeat  (rows*columns) 1
 
 
+{-| Generate a matrix of zeroes
+-}
 zeroes : (Int, Int) -> Matrix
-zeroes a =
-  Err "Not Implemented"
+zeroes (rows, columns) =
+  fromList (rows, columns) <| List.repeat  (rows*columns) 0
 
+{-| Create an nxn identity matrix
+-}
+eye : Int -> Matrix
+eye diagonal =
+  case diagonal of
+    0 ->
+      from2DList []
+
+    1 ->
+      from2DList [[1]]
+
+    2 ->
+      from2DList [[1, 0], [0, 1]]
+
+    _ ->
+      Err "Not Implemented"
