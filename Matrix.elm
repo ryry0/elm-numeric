@@ -699,12 +699,8 @@ transposeBase a_ =
                         * (numColumns a_)
                         + (index // numRows a_)
             in
-                case Array.get mappedindex a_.elements of
-                    Just a ->
-                        a
+                Maybe.withDefault 0.0 (Array.get mappedindex a_.elements)
 
-                    Nothing ->
-                        0
     in
         Array.initialize (numColumns a_ * numRows a_) f
             |> fromArray ( numColumns a_, numRows a_ )
