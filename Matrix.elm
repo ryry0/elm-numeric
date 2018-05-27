@@ -29,6 +29,7 @@ module Matrix
         , map2
         , mul
         , vcat
+        , hcat
         , transpose
         , determinant
         , det
@@ -81,7 +82,7 @@ transposes, multiplication, and inversion.
 
 # Matrix operations
 
-@docs mul, vcat, get, set, transpose, determinant, det
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV
 
 
 # Matrix display
@@ -836,6 +837,34 @@ vcatBase a_ b_ =
                     ++ toString acols
                     ++ " b: "
                     ++ toString bcols
+
+
+
+{-| Concatenate two matrices horizontally.
+-}
+hcat : Matrix -> Matrix -> Matrix
+hcat a b =
+    forwardError2 "[in hcat]" hcatBase a b
+
+hcatBase : Matnxn -> Matnxn -> Matrix
+hcatBase a b =
+    let
+        arows =
+            numRows a
+
+        brows =
+            numRows b
+    in
+    if arows == brows then
+        vcat (transposeBase a) (transposeBase b)
+        |> transpose
+    else
+        Err <|
+            "Number of rows are not equal: a: "
+                ++ toString arows
+                ++ " b: "
+                ++ toString brows
+
 
 
 {-| Returns matrix as flat list
