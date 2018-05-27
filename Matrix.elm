@@ -35,6 +35,7 @@ module Matrix
         , transpose
         , determinant
         , det
+        , solveV
         , prettyPrint
         , debugPrint
         , to2DList
@@ -642,16 +643,120 @@ solveV a b =
 solveVBase : Matnxn -> Matnxn -> Matrix
 solveVBase a b =
     let
-        single = luNoPivotSingle a
         b_is_vector =
             numColumns b == 1
         dimensions_match =
+            numRows b == numColumns a
+        a_is_square =
+            numColumns a == numRows a
+    in
+        case (b_is_vector, dimensions_match, a_is_square) of
+            (True, True, True) ->
+               let
+                    arows = numRows a
+                    z = zeroes (arows, 1)
+               in
+                  case z of
+                      Mat z_ ->
+                          let
+                            single = luNoPivotSingle a
+
+                            is = List.range 1 (numRows a)
+                            fsBound i y =
+                                forwardSubstitution i a b y
+
+                            y = List.foldl fsBound z_ is
+
+                            bsBound i x =
+                                backSubstitution i a y x
+
+                            x = List.foldr bsBound z_ is
+                          in
+                          Mat x
+                      _ ->
+                          z
+
+            (False, _, _) ->
+                Err "b is not a vector."
+            (_, False, _) ->
+                Err "Dimensions of A and b do not match"
+            (_, _, False) ->
+                Err "A is not square"
+
+{-| Perform forward substitution remembering that the diagonal of the lower lu
+matrix is all ones.
+l is technically the lower lu matrix
+b is the original passed in vector of b's
+y is the solution, updated piecewise, of L * y = b
+
+Numerical Recipes in C 2.3.6
+-}
+forwardSubstitution : Int  -> Matnxn -> Matnxn -> Matnxn -> Matnxn
+forwardSubstitution i l b y =
+    let
+        getWithDefault index mat =
+            Maybe.withDefault 0.0 (getBase index mat)
+
+        getVecDefault index vec =
+            getWithDefault (index, 1) vec
+
+
+        yi =
+            case i of
+                1 ->
+                    getVecDefault i b
+                _ ->
+                    let
+                        bi = getVecDefault i b
+                        j = List.range 1 (i-1)
+                        lijs = List.map (\curr_j -> getWithDefault (i, curr_j) l) j
+                        yjs = List.map (\curr_j -> getVecDefault curr_j y) j
+                        sum =
+                            List.sum <| List.map2 (*) lijs yjs
+                    in
+                       bi - sum
 
     in
-        if numColumns b == 1 then
-        else
-            Err "b is not a column vector"
+        setBase ( i, 1 ) yi y
 
+{-| Perform forward substitution remembering that the diagonal of the lower lu
+matrix is all ones.
+u is technically the upper lu matrix
+y is the original passed in vector of b's
+x is the solution, updated piecewise of BOTH Ux = y and the original Ax = b
+
+Numerical Recipes in C 2.3.7
+-}
+backSubstitution : Int -> Matnxn -> Matnxn -> Matnxn -> Matnxn
+backSubstitution i u y x =
+    let
+        getWithDefault index mat =
+            Maybe.withDefault 0.0 (getBase index mat)
+
+        getVecDefault index vec =
+            getWithDefault (index, 1) vec
+
+        uii = getWithDefault (i, i) u
+        xrows = numRows x
+
+        xi =
+            if i == xrows then
+                (getVecDefault i y)/(uii)
+            else
+
+                let
+                    --aij = getWithDefault ( i, j ) original
+                    yi = getVecDefault i y
+                    j = List.range (i + 1) (xrows)
+                    uijs = List.map (\curr_j -> getWithDefault (i, curr_j) u) j
+                    xjs = List.map (\curr_j -> getVecDefault curr_j x) j
+                    sum =
+                        List.sum <| List.map2 (*) uijs xjs
+                in
+                   (yi - sum)/uii
+
+    in
+        setBase ( i, 1 ) xi x
 
 {-| Transpose a matrix
 -}
