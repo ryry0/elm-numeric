@@ -30,6 +30,8 @@ module Matrix
         , mul
         , vcat
         , hcat
+        , getRows
+        , getColumns
         , transpose
         , determinant
         , det
@@ -83,6 +85,7 @@ transposes, multiplication, and inversion.
 # Matrix operations
 
 @docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV
+@docs getRows, getColumns
 
 
 # Matrix display
@@ -1006,6 +1009,18 @@ make2D num_row_elem list =
             else
                 List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
 
+
+{-| Returns the rows of a matrix in a list
+-}
+getRows : Matrix -> List Matrix
+getRows a =
+    List.map rvec <| to2DList a
+
+{-| Returns the rows of a matrix in a list
+-}
+getColumns : Matrix -> List Matrix
+getColumns a =
+    List.map vec <| to2DList (transpose a)
 
 {-| Helper to debug print
 -}
