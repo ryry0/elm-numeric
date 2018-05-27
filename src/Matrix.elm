@@ -48,8 +48,6 @@ module Matrix
         , Matrix
         )
 
-
-
 {-| A matrix library.
 This library aims to be a reasonably complete suite of linear algebra tools.
 
@@ -102,6 +100,7 @@ transposes, multiplication, and inversion.
 
 import Array
 
+
 type alias Matnxn =
     { dimensions : ( Int, Int )
     , elements : Array.Array Float
@@ -123,7 +122,7 @@ type Matrix
 Fails if dimension mismatch. Elements need to be specified in row-major order.
 
     matrix =
-        Matrix.fromList ( 2, 3 ) [ 2, 2, 2  ,  3, 3, 3  ]
+        Matrix.fromList ( 2, 3 ) [ 2, 2, 2, 3, 3, 3 ]
 
 -}
 fromList : ( Int, Int ) -> List Float -> Matrix
@@ -216,6 +215,7 @@ fromString : String -> Matrix
 fromString string =
     from2DList <| matParser string
 
+
 {-| Shorthand for fromString
 -}
 mats : String -> Matrix
@@ -226,7 +226,8 @@ mats =
 {-| Create a column vector from a list
 
     column =
-        Matrix.cvecFromList [1, 2, 3, 4]
+        Matrix.cvecFromList [ 1, 2, 3, 4 ]
+
 -}
 cvecFromList : List Float -> Matrix
 cvecFromList a =
@@ -271,7 +272,8 @@ rand a =
 {-| Generate a matrix of ones
 
     lots_of_ones =
-        Matrix.ones (4, 3)
+        Matrix.ones ( 4, 3 )
+
 -}
 ones : ( Int, Int ) -> Matrix
 ones ( rows, columns ) =
@@ -281,7 +283,8 @@ ones ( rows, columns ) =
 {-| Generate a matrix of zeroes
 
     lots_of_zeroes =
-        Matrix.zeroes (3, 4)
+        Matrix.zeroes ( 3, 4 )
+
 -}
 zeroes : ( Int, Int ) -> Matrix
 zeroes ( rows, columns ) =
@@ -292,6 +295,7 @@ zeroes ( rows, columns ) =
 
     identity =
         Matrix.eye 3
+
 -}
 eye : Int -> Matrix
 eye diagonal =
@@ -310,6 +314,7 @@ eye diagonal =
 
     triangle =
         Matrix.upper 4
+
 -}
 upper : Int -> Matrix
 upper diagonal =
@@ -331,6 +336,7 @@ This means that elements along the diagonal are zero
 
     striangle =
         Matrix.strictUpper 4
+
 -}
 strictUpper : Int -> Matrix
 strictUpper diagonal =
@@ -341,6 +347,7 @@ strictUpper diagonal =
 
     ltriangle =
         Matrix.lower 4
+
 -}
 lower : Int -> Matrix
 lower diagonal =
@@ -352,6 +359,7 @@ This means that elements along the diagonal are zero
 
     sltriangle =
         Matrix.strictLower 4
+
 -}
 strictLower : Int -> Matrix
 strictLower diagonal =
@@ -374,6 +382,7 @@ strictLower diagonal =
 
     c =
         mul a b
+
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
@@ -543,8 +552,9 @@ getScaling mat =
     a =
         Matrix.mats "[3 4; 5 6]"
 
-    b = -- equals 4
-        get (1,2) a
+    b =
+        -- equals 4
+        get ( 1, 2 ) a
 
 -}
 get : ( Int, Int ) -> Matrix -> Maybe Float
@@ -598,7 +608,8 @@ setBase ( r_index, c_index ) data a_ =
 {-| Add two matrices of identical dimensions together
 
     a =
-        Matrix.add (Matrix.zeroes (2,2)) (Matrix.ones (2,2))
+        Matrix.add (Matrix.zeroes ( 2, 2 )) (Matrix.ones ( 2, 2 ))
+
 -}
 add : Matrix -> Matrix -> Matrix
 add a b =
@@ -666,14 +677,15 @@ sDiv a b =
 
 
 {-| Invert a square matrix
-    a =
-      "[ 2 5; 6 7]"
+a =
+"[ 2 5; 6 7]"
 
     inva =
         invert a
 
     identity =
         mul a inva
+
 -}
 invert : Matrix -> Matrix
 invert a =
@@ -701,10 +713,11 @@ B is a matrix of solution vectors horizontally concatenated.
         Matrix.eye 3
 
     b =
-        Matrix.hcat (Matrix.vec [3, 2, 1]) (Matrix.vec [1,2,3])
+        Matrix.hcat (Matrix.vec [ 3, 2, 1 ]) (Matrix.vec [ 1, 2, 3 ])
 
     x =
         Matrix.solve a b
+
 -}
 solve : Matrix -> Matrix -> Matrix
 solve a b =
@@ -742,10 +755,11 @@ Where A is a matrix, and b and x are vectors
         Matrix.eye 3
 
     b =
-        Matrix.vec [3, 2, 1]
+        Matrix.vec [ 3, 2, 1 ]
 
     x =
         Matrix.solve a b
+
 -}
 solveV : Matrix -> Matrix -> Matrix
 solveV a b =
@@ -942,9 +956,10 @@ transposeBase a_ =
 
     is_singular =
         if (determinant a) == 0 then
-           "Matrix is singular"
+            "Matrix is singular"
         else
-           "Matrix is not singular"
+            "Matrix is not singular"
+
 -}
 determinant : Matrix -> Maybe Float
 determinant a =
@@ -1270,15 +1285,14 @@ toStringBasic a =
 
         matrix_string =
             structured_strings
-            |> List.intersperse [ "\n" ]
-            |> List.concat
-            |> List.foldr (++) ""
+                |> List.intersperse [ "\n" ]
+                |> List.concat
+                |> List.foldr (++) ""
 
         description_string =
             dimToString a ++ " Matrix\n"
-
     in
-       description_string ++ matrix_string ++ "\n"
+        description_string ++ matrix_string ++ "\n"
 
 
 {-| Helper to re-2dify a flat matrix
