@@ -45,6 +45,7 @@ module Matrix
         , luDecomp
         , invert
         , inv
+        , size
         , Matrix
         )
 
