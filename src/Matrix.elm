@@ -25,6 +25,7 @@ module Matrix
         , add
         , eMul
         , get
+        , set
         , map
         , map2
         , mul
@@ -41,15 +42,12 @@ module Matrix
         , debugPrint
         , to2DList
         , toFlatList
-        , getScaling
         , luDecomp
-        , genIndices
         , invert
         , inv
         , Matrix
         )
 
-import Array
 
 
 {-| A matrix library.
@@ -68,13 +66,12 @@ transposes, multiplication, and inversion.
 
 # Creating matrices
 
-@docs fromList, from2DList, fromString, mat, mats, zeroes, ones, eye, upper, lower
-@docs strictLower, strictUpper
+@docs fromList, from2DList, fromString, mat, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper
 
 
 # Creating vectors
 
-@docs cvec, rvec, vec
+@docs cvec, rvec, vec, cvecFromList, rvecFromList
 
 
 # Vector operations
@@ -89,8 +86,7 @@ transposes, multiplication, and inversion.
 
 # Matrix operations
 
-@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv
-@docs getRows, getColumns
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns
 
 
 # Matrix display
@@ -103,12 +99,17 @@ transposes, multiplication, and inversion.
 @docs to2DList, toFlatList
 
 -}
+
+import Array
+
 type alias Matnxn =
     { dimensions : ( Int, Int )
     , elements : Array.Array Float
     }
 
 
+{-| The Matrix type. It can either be an actual matrix or an error string.
+-}
 type Matrix
     = Mat Matnxn
     | Err String
@@ -215,13 +216,17 @@ fromString : String -> Matrix
 fromString string =
     from2DList <| matParser string
 
-
+{-| Shorthand for fromString
+-}
 mats : String -> Matrix
 mats =
     fromString
 
 
 {-| Create a column vector from a list
+
+    column =
+        Matrix.cvecFromList [1, 2, 3, 4]
 -}
 cvecFromList : List Float -> Matrix
 cvecFromList a =
@@ -264,6 +269,9 @@ rand a =
 
 
 {-| Generate a matrix of ones
+
+    lots_of_ones =
+        Matrix.ones (4, 3)
 -}
 ones : ( Int, Int ) -> Matrix
 ones ( rows, columns ) =
@@ -271,6 +279,9 @@ ones ( rows, columns ) =
 
 
 {-| Generate a matrix of zeroes
+
+    lots_of_zeroes =
+        Matrix.zeroes (3, 4)
 -}
 zeroes : ( Int, Int ) -> Matrix
 zeroes ( rows, columns ) =
@@ -278,6 +289,9 @@ zeroes ( rows, columns ) =
 
 
 {-| Create an nxn identity matrix
+
+    identity =
+        Matrix.eye 3
 -}
 eye : Int -> Matrix
 eye diagonal =
@@ -293,6 +307,9 @@ eye diagonal =
 
 
 {-| Create an nxn upper triangular matrix
+
+    triangle =
+        Matrix.upper 4
 -}
 upper : Int -> Matrix
 upper diagonal =
@@ -311,6 +328,9 @@ upper diagonal =
 
 {-| Create an nxn strict upper triangular matrix
 This means that elements along the diagonal are zero
+
+    striangle =
+        Matrix.strictUpper 4
 -}
 strictUpper : Int -> Matrix
 strictUpper diagonal =
@@ -318,6 +338,9 @@ strictUpper diagonal =
 
 
 {-| Create an nxn lower triangular matrix
+
+    ltriangle =
+        Matrix.lower 4
 -}
 lower : Int -> Matrix
 lower diagonal =
@@ -326,6 +349,9 @@ lower diagonal =
 
 {-| Create an nxn strict lower triangular matrix
 This means that elements along the diagonal are zero
+
+    sltriangle =
+        Matrix.strictLower 4
 -}
 strictLower : Int -> Matrix
 strictLower diagonal =
@@ -340,6 +366,14 @@ strictLower diagonal =
 
     A * B
 
+    a =
+        Matrix.eye (2, 2)
+
+    b =
+        Matrix.mats "[2, 3; 4 5]"
+
+    c =
+        mul a b
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
@@ -505,6 +539,13 @@ getScaling mat =
 
 
 {-| Get an item at index (row, column). Indices are 1-indexed.
+
+    a =
+        Matrix.mats "[3 4; 5 6]"
+
+    b = -- equals 4
+        get (1,2) a
+
 -}
 get : ( Int, Int ) -> Matrix -> Maybe Float
 get indices a =
@@ -555,6 +596,9 @@ setBase ( r_index, c_index ) data a_ =
 
 
 {-| Add two matrices of identical dimensions together
+
+    a =
+        Matrix.add (Matrix.zeroes (2,2)) (Matrix.ones (2,2))
 -}
 add : Matrix -> Matrix -> Matrix
 add a b =
@@ -622,6 +666,14 @@ sDiv a b =
 
 
 {-| Invert a square matrix
+    a =
+      "[ 2 5; 6 7]"
+
+    inva =
+        invert a
+
+    identity =
+        mul a inva
 -}
 invert : Matrix -> Matrix
 invert a =
@@ -633,6 +685,8 @@ invert a =
             Err string
 
 
+{-| Shorthand for invert
+-}
 inv : Matrix -> Matrix
 inv =
     invert
@@ -642,6 +696,15 @@ inv =
 AX = B. You provide A and b and get back x
 Where A, B, X are matrices
 B is a matrix of solution vectors horizontally concatenated.
+
+    a =
+        Matrix.eye 3
+
+    b =
+        Matrix.hcat (Matrix.vec [3, 2, 1]) (Matrix.vec [1,2,3])
+
+    x =
+        Matrix.solve a b
 -}
 solve : Matrix -> Matrix -> Matrix
 solve a b =
@@ -674,6 +737,15 @@ solve a b =
 {-| Solve a system of equations of the form
 Ax = b. You provide A and b and get back x
 Where A is a matrix, and b and x are vectors
+
+    a =
+        Matrix.eye 3
+
+    b =
+        Matrix.vec [3, 2, 1]
+
+    x =
+        Matrix.solve a b
 -}
 solveV : Matrix -> Matrix -> Matrix
 solveV a b =
@@ -864,6 +936,15 @@ transposeBase a_ =
 
 
 {-| Get the determinant of a square matrix
+
+    a =
+        Matrix.mats "[1 2 3; 4 5 6; 7 8 9]"
+
+    is_singular =
+        if (determinant a) == 0 then
+           "Matrix is singular"
+        else
+           "Matrix is not singular"
 -}
 determinant : Matrix -> Maybe Float
 determinant a =
@@ -885,6 +966,8 @@ determinant a =
         forwardErrorF "[in determinant]" detBase a
 
 
+{-| Shorthand for determinant
+-}
 det : Matrix -> Maybe Float
 det =
     determinant
