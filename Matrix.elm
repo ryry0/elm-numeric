@@ -336,50 +336,12 @@ strictLower diagonal =
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
-    forwardError "[in mul]" mulList a b
+    forwardError2 "[in mul]" mulList a b
 
 
 mulArray : Matnxn -> Matnxn -> Matrix
 mulArray a_ b_ =
     Err "Not Implemented"
-
-
-
-{--
-    if numColumns a_ /= numRows b_ then
-        let
-            acolumns =
-                toString <| numColumns a_
-
-            brows =
-                toString <| numRows b_
-        in
-            Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
-    else
-    let
-        a_arr = a_.elements
-            let
-                array =
-                    case transposeBase b_ of
-                        Mat t_ ->
-                            t_.elements
-                        _ ->
-                            Array.fromList []
-            in
-        b_arr = array
-        collapse x y =
-            Array.foldr (+) 0  <| arraymap2 (*) x y --element level
-
-        constructList x y =
-            case x of
-                [] ->
-                    []
-                m :: ms ->
-                    List.map (collapse m) y :: constructList (List.drop 1 x) y
-
-    in
-       from2DList <| constructList a_list b_list
-       --}
 
 
 {-| Implementation of multiplication using lists.
@@ -536,12 +498,7 @@ getScaling mat =
 -}
 get : ( Int, Int ) -> Matrix -> Maybe Float
 get indices a =
-    case a of
-        Mat a_ ->
-            getBase indices a_
-
-        Err _ ->
-            Nothing
+    forwardErrorF "[in get]" (getBase indices) a
 
 
 getBase : ( Int, Int ) -> Matnxn -> Maybe Float
@@ -564,13 +521,7 @@ getBase ( r_index, c_index ) a_ =
 -}
 set : ( Int, Int ) -> Float -> Matrix -> Matrix
 set indices data a =
-    case a of
-        Mat a_ ->
-            Mat <| setBase indices data a_
-
-        Err string ->
-            Err string
-
+    forwardError "[in set]" (\x -> (Mat <| setBase indices data x)) a
 
 setBase : ( Int, Int ) -> Float -> Matnxn -> Matnxn
 setBase ( r_index, c_index ) data a_ =
@@ -596,7 +547,7 @@ setBase ( r_index, c_index ) data a_ =
 -}
 add : Matrix -> Matrix -> Matrix
 add a b =
-    forwardError "[in add]" addBase a b
+    forwardError2 "[in add]" addBase a b
 
 
 addBase : Matnxn -> Matnxn -> Matrix
@@ -618,19 +569,15 @@ addBase a_ b_ =
 -}
 map : (Float -> Float) -> Matrix -> Matrix
 map f a =
-    case a of
-        Mat a_ ->
-            fromArray ( numRows a_, numColumns a_ ) <| Array.map f a_.elements
-
-        Err string ->
-            Err string
+    forwardError "[in map]"
+        (\a_ -> fromArray ( numRows a_, numColumns a_ ) <| Array.map f a_.elements) a
 
 
 {-| Map a function over elements of same index between matrices
 -}
 map2 : (Float -> Float -> Float) -> Matrix -> Matrix -> Matrix
 map2 f a b =
-    forwardError "[in map2]" (map2Base f) a b
+    forwardError2 "[in map2]" (map2Base f) a b
 
 
 map2Base : (Float -> Float -> Float) -> Matnxn -> Matnxn -> Matrix
@@ -666,28 +613,20 @@ sDiv a b =
 -}
 invert : Matrix -> Matrix
 invert a =
-    case a of
-        Mat a_ ->
-            if numRows a_ == numColumns a_ then
-                Err "Not Implemented"
-            else
-                Err "Matrix is not square"
+    forwardError "[in invert]" invertBase a
 
-        Err string ->
-            Err string
-
+invertBase : Matnxn -> Matrix
+invertBase a =
+    if numRows a == numColumns a then
+        Err "Not Implemented"
+    else
+        Err "Matrix is not square"
 
 {-| Transpose a matrix
 -}
 transpose : Matrix -> Matrix
 transpose a =
-    case a of
-        Mat a_ ->
-            transposeBase a_
-
-        Err string ->
-            Err string
-
+    forwardError "[in transpose]" transposeBase a
 
 transposeBase : Matnxn -> Matrix
 transposeBase a_ =
@@ -710,23 +649,21 @@ transposeBase a_ =
 -}
 determinant : Matrix -> Maybe Float
 determinant a =
-    case a of
-        Mat a_ ->
-            if numRows a_ == numColumns a_ then
-                let
-                    single =
-                        luNoPivotSingle a_
-                in
-                    List.range 1 (numRows a_)
-                        |> List.map (\x -> ( x, x ))
-                        |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
-                        |> List.product
-                        |> Just
-            else
-                Nothing
-
-        Err _ ->
+    let detBase a_ =
+        if numRows a_ == numColumns a_ then
+            let
+                single =
+                    luNoPivotSingle a_
+            in
+                List.range 1 (numRows a_)
+                    |> List.map (\x -> ( x, x ))
+                    |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
+                    |> List.product
+                    |> Just
+        else
             Nothing
+    in
+    forwardErrorF "[in determinant]" detBase a
 
 
 {-| Performs the dot product of two nxn vectors
@@ -765,47 +702,45 @@ a cross b
 -}
 cross : Matrix -> Matrix -> Matrix
 cross a b =
-    forwardError "[in cross]" crossBase a b
+    forwardError2 "[in cross]" crossBase a b
 
 
 crossBase : Matnxn -> Matnxn -> Matrix
 crossBase a_ b_ =
     if check3dVec a_ && check3dVec b_ then
         let
+            getDefault x vec =
+                Maybe.withDefault 0.0 <| getBase x vec
             ax =
-                getBase ( 1, 1 ) a_
+                getDefault ( 1, 1 ) a_
 
             ay =
-                getBase ( 2, 1 ) a_
+                getDefault ( 2, 1 ) a_
 
             az =
-                getBase ( 3, 1 ) a_
+                getDefault ( 3, 1 ) a_
 
             bx =
-                getBase ( 1, 1 ) b_
+                getDefault ( 1, 1 ) b_
 
             by =
-                getBase ( 2, 1 ) b_
+                getDefault ( 2, 1 ) b_
 
             bz =
-                getBase ( 3, 1 ) b_
+                getDefault ( 3, 1 ) b_
         in
-            case ( ax, ay, az, bx, by, bz ) of
-                ( Just ax_, Just ay_, Just az_, Just bx_, Just by_, Just bz_ ) ->
-                    let
-                        i =
-                            (ay_ * bz_) - (by_ * az_)
+            let
+                i =
+                    (ay * bz) - (by * az)
 
-                        j =
-                            -1 * ((ax_ * bz_) - (bx_ * az_))
+                j =
+                    -1 * ((ax * bz) - (bx * az))
 
-                        k =
-                            (ax_ * by_) - (bx_ * ay_)
-                    in
-                        vec <| [ i, j, k ]
+                k =
+                    (ax * by) - (bx * ay)
+            in
+                vec <| [ i, j, k ]
 
-                ( _, _, _, _, _, _ ) ->
-                    Err "One or more elements are missing, possible malformed vector"
     else
         Err "One or both vectors are malformed."
 
@@ -846,7 +781,7 @@ equivalent a b epsilon =
 -}
 vcat : Matrix -> Matrix -> Matrix
 vcat a b =
-    forwardError "[in vcat]" vcatBase a b
+    forwardError2 "[in vcat]" vcatBase a b
 
 
 vcatBase : Matnxn -> Matnxn -> Matrix
@@ -923,8 +858,8 @@ size n =
 {-| Helper to catch errors in functions of two variables (Matrix -> Matrix) ->
 Matrix
 -}
-forwardError : String -> (Matnxn -> Matnxn -> Matrix) -> Matrix -> Matrix -> Matrix
-forwardError error f a b =
+forwardError2 : String -> (Matnxn -> Matnxn -> Matrix) -> Matrix -> Matrix -> Matrix
+forwardError2 error f a b =
     case ( a, b ) of
         ( Err string, Mat _ ) ->
             Err <| "\n" ++ error ++ " Matrix a: " ++ string
@@ -938,6 +873,21 @@ forwardError error f a b =
         ( Mat a_, Mat b_ ) ->
             f a_ b_
 
+forwardError : String -> (Matnxn -> Matrix) -> Matrix -> Matrix
+forwardError error f a =
+    case a of
+        Mat a_ ->
+            f a_
+        Err string ->
+            Err <| "\n" ++ error ++ string
+
+forwardErrorF : String -> (Matnxn -> Maybe Float) -> Matrix -> Maybe Float
+forwardErrorF error f a =
+    case a of
+        Mat a_ ->
+            f a_
+        Err string ->
+            Nothing
 
 {-| Helper to take a Matrix and stringify its dimensions
 -}
