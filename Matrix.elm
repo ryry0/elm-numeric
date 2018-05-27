@@ -12,6 +12,10 @@ module Matrix
         , zeroes
         , ones
         , eye
+        , upper
+        , lower
+        , strictUpper
+        , strictLower
         , vec
         , dot
         , cross
@@ -50,7 +54,12 @@ transposes, multiplication, and inversion.
 
 # Creating matrices
 
-@docs fromList, from2DList, fromString, mat, mats, cvec, rvec, vec, zeroes, ones, eye
+@docs fromList, from2DList, fromString, mat, mats,  zeroes, ones, eye, upper, lower
+@docs strictLower, strictUpper
+
+# Creating vectors
+
+@docs cvec, rvec, vec
 
 # Vector operations
 
@@ -249,6 +258,38 @@ eye diagonal =
         Array.initialize (diagonal * diagonal) gen
             |> fromArray ( diagonal, diagonal )
 
+{-| Create an nxn upper triangular matrix
+-}
+upper : Int -> Matrix
+upper diagonal =
+    let
+        range = List.range 0 (diagonal-1)
+        f i =
+            List.append (List.repeat i 0.0) (List.repeat (diagonal-i) 1.0)
+        list = List.map f range
+    in
+       from2DList list
+
+{-| Create an nxn strict upper triangular matrix
+This means that elements along the diagonal are zero
+-}
+strictUpper : Int -> Matrix
+strictUpper diagonal =
+    map2 (-) (upper diagonal) (eye diagonal)
+
+{-| Create an nxn lower triangular matrix
+-}
+lower : Int -> Matrix
+lower diagonal =
+    transpose <| upper diagonal
+
+{-| Create an nxn strict lower triangular matrix
+This means that elements along the diagonal are zero
+-}
+strictLower : Int -> Matrix
+strictLower diagonal =
+    map2 (-) (transpose <| upper diagonal) (eye diagonal)
+
 -- Operations
 
 {-| Perform matrix multiplication
@@ -400,6 +441,21 @@ map f a =
 
         Err string ->
             Err string
+
+{-| Map a function over elements of same index between matrices
+-}
+map2 : (Float -> Float -> Float) -> Matrix -> Matrix -> Matrix
+map2 f a b =
+    forwardError "[in map2]" (map2Base f) a b
+
+
+map2Base : (Float -> Float -> Float) -> Matnxn -> Matnxn -> Matrix
+map2Base f a b =
+    if equalSize a b then
+        fromArray a.dimensions <| arraymap2 f a.elements b.elements
+    else
+        Err "Unequal Matrix sizes"
+
 
 
 {-| Perform scalar multiplication on a matrix
