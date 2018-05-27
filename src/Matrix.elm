@@ -1290,10 +1290,8 @@ toStringBasic a =
                 |> List.concat
                 |> List.foldr (++) ""
 
-        description_string =
-            dimToString a ++ " Matrix\n"
     in
-        description_string ++ matrix_string ++ "\n"
+        matrix_string
 
 
 {-| Helper to re-2dify a flat matrix
@@ -1329,7 +1327,14 @@ getColumns a =
 -}
 debugPrint : Matrix -> String
 debugPrint a =
-    Debug.log (toString a) ""
+    let
+        description_string =
+            Basics.toString (size a) ++ " Matrix\n"
+
+        final_string =
+            description_string ++ toString a ++ "\n"
+    in
+        Debug.log (final_string) ""
 
 
 {-| Get the number of rows in a matrix
