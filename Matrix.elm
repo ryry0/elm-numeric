@@ -36,6 +36,7 @@ module Matrix
         , determinant
         , det
         , solveV
+        , solve
         , prettyPrint
         , debugPrint
         , to2DList
@@ -85,7 +86,7 @@ transposes, multiplication, and inversion.
 
 # Matrix operations
 
-@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve
 @docs getRows, getColumns
 
 
@@ -633,6 +634,16 @@ inv : Matrix -> Matrix
 inv = invert
 
 {-| Solve a system of equations of the form
+AX = B. You provide A and b and get back x
+Where A, B, X are matrices
+B is a matrix of solution vectors horizontally concatenated.
+-}
+solve : Matrix -> Matrix -> Matrix
+solve a b =
+    Err "s" -- getColumns b
+
+
+{-| Solve a system of equations of the form
 Ax = b. You provide A and b and get back x
 Where A is a matrix, and b and x are vectors
 -}
@@ -652,29 +663,7 @@ solveVBase a b =
     in
         case (b_is_vector, dimensions_match, a_is_square) of
             (True, True, True) ->
-               let
-                    arows = numRows a
-                    z = zeroes (arows, 1)
-               in
-                  case z of
-                      Mat z_ ->
-                          let
-                            single = luNoPivotSingle a
-
-                            is = List.range 1 (numRows a)
-                            fsBound i y =
-                                forwardSubstitution i a b y
-
-                            y = List.foldl fsBound z_ is
-
-                            bsBound i x =
-                                backSubstitution i a y x
-
-                            x = List.foldr bsBound z_ is
-                          in
-                          Mat x
-                      _ ->
-                          z
+                applySubstitution (luNoPivotSingle a) b
 
             (False, _, _) ->
                 Err "b is not a vector."
@@ -682,6 +671,34 @@ solveVBase a b =
                 Err "Dimensions of A and b do not match"
             (_, _, False) ->
                 Err "A is not square"
+
+{- Applies forward and backward substitution, decoupling substitution from
+computing lu decomp
+-}
+applySubstitution : Matrix -> Matnxn -> Matrix
+applySubstitution single b =
+    let
+        brows = numRows b
+        z = zeroes (brows, 1)
+    in
+      case (z, single) of
+          (Mat z_, Mat single_) ->
+              let
+                is = List.range 1 (numRows b)
+                fsBound i y =
+                    forwardSubstitution i single_ b y
+
+                y = List.foldl fsBound z_ is
+
+                bsBound i x =
+                    backSubstitution i single_ y x
+
+                x = List.foldr bsBound z_ is
+              in
+              Mat x
+          _ ->
+              z
+
 
 {-| Perform forward substitution remembering that the diagonal of the lower lu
 matrix is all ones.
@@ -1121,7 +1138,7 @@ getRows : Matrix -> List Matrix
 getRows a =
     List.map rvec <| to2DList a
 
-{-| Returns the rows of a matrix in a list
+{-| Returns the columns of a matrix in a list
 -}
 getColumns : Matrix -> List Matrix
 getColumns a =
