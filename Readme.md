@@ -8,4 +8,5 @@ transposes, LU decomposition and more!
 TODO:
 * Interop with webgl
 * Interop with plotting, such as elm-visualization
+* Create LaTeX strings
 * Make it faster!

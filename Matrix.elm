@@ -37,7 +37,7 @@ module Matrix
         , det
         , solveV
         , solve
-        , prettyPrint
+        , toString
         , debugPrint
         , to2DList
         , toFlatList
@@ -46,6 +46,7 @@ module Matrix
         , genIndices
         , invert
         , inv
+        , Matrix
         )
 
 import Array
@@ -94,7 +95,7 @@ transposes, multiplication, and inversion.
 
 # Matrix display
 
-@docs prettyPrint, debugPrint
+@docs toString, debugPrint
 
 
 # Interop
@@ -139,10 +140,10 @@ fromArray ( rows, columns ) elements =
     else
         let
             dimensions =
-                toString (rows * columns)
+                Basics.toString (rows * columns)
 
             numelements =
-                toString <| Array.length elements
+                Basics.toString <| Array.length elements
         in
             Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
 
@@ -358,10 +359,10 @@ mulList a_ b_ =
     if numColumns a_ /= numRows b_ then
         let
             acolumns =
-                toString <| numColumns a_
+                Basics.toString <| numColumns a_
 
             brows =
-                toString <| numRows b_
+                Basics.toString <| numRows b_
         in
             Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
     else
@@ -1027,9 +1028,9 @@ vcatBase a_ b_ =
         else
             Err <|
                 "Number of columns are not equal: a: "
-                    ++ toString acols
+                    ++ Basics.toString acols
                     ++ " b: "
-                    ++ toString bcols
+                    ++ Basics.toString bcols
 
 
 {-| Concatenate two matrices horizontally.
@@ -1054,9 +1055,9 @@ hcatBase a b =
         else
             Err <|
                 "Number of rows are not equal: a: "
-                    ++ toString arows
+                    ++ Basics.toString arows
                     ++ " b: "
-                    ++ toString brows
+                    ++ Basics.toString brows
 
 
 {-| Returns matrix as flat list
@@ -1150,21 +1151,21 @@ dimToString : Matnxn -> String
 dimToString a =
     let
         arows =
-            toString <| numRows a
+            Basics.toString <| numRows a
 
         acols =
-            toString <| numColumns a
+            Basics.toString <| numColumns a
     in
         "(" ++ arows ++ "," ++ acols ++ ")"
 
 
 {-| Change matrix into string form
 -}
-prettyPrint : Matrix -> String
-prettyPrint a =
+toString : Matrix -> String
+toString a =
     case a of
         Mat mat ->
-            prettyPrintBasic mat
+            toStringBasic mat
 
         Err string ->
             string
@@ -1172,21 +1173,29 @@ prettyPrint a =
 
 {-| Change correctly formed matrix into string form
 -}
-prettyPrintBasic : Matnxn -> String
-prettyPrintBasic a =
+toStringBasic : Matnxn -> String
+toStringBasic a =
     let
         strings =
             a.elements
                 |> Array.toList
-                |> List.map toString
+                |> List.map Basics.toString
                 |> List.map ((++) " ")
 
         structured_strings =
             make2D (numColumns a) strings
-    in
-        List.intersperse [ "\n" ] structured_strings
+
+        matrix_string =
+            structured_strings
+            |> List.intersperse [ "\n" ]
             |> List.concat
             |> List.foldr (++) ""
+
+        description_string =
+            dimToString a ++ " Matrix\n"
+
+    in
+       description_string ++ matrix_string ++ "\n"
 
 
 {-| Helper to re-2dify a flat matrix
@@ -1222,7 +1231,7 @@ getColumns a =
 -}
 debugPrint : Matrix -> String
 debugPrint a =
-    Debug.log (prettyPrint a) ""
+    Debug.log (toString a) ""
 
 
 {-| Get the number of rows in a matrix
