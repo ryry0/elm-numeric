@@ -23,8 +23,10 @@ module Matrix
         , sDiv
         , equivalent
         , add
+        , eMul
         , get
         , map
+        , map2
         , mul
         , vcat
         , transpose
@@ -67,7 +69,7 @@ transposes, multiplication, and inversion.
 
 # Matrix element-wise operations
 
-@docs add, equivalent, sMul, sDiv, map
+@docs add, equivalent, sMul, sDiv, map, map2, eMul
 
 # Matrix operations
 
@@ -464,6 +466,11 @@ sMul : Float -> Matrix -> Matrix
 sMul a b =
     map ((*) a) b
 
+{-| Perform element by element multiplication on a matrix
+-}
+eMul : Matrix -> Matrix -> Matrix
+eMul a b =
+    map2 (*) a b
 
 {-| Perform scalar division on a matrix
 -}
