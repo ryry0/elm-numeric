@@ -44,6 +44,7 @@ module Matrix
         , getScaling
         , luDecomp
         , genIndices
+        , invert
         )
 
 import Array
@@ -86,7 +87,7 @@ transposes, multiplication, and inversion.
 
 # Matrix operations
 
-@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv
 @docs getRows, getColumns
 
 
@@ -621,14 +622,13 @@ sDiv a b =
 -}
 invert : Matrix -> Matrix
 invert a =
-    forwardError "[in invert]" invertBase a
+    case a of
+        Mat a_ ->
+            solve a (eye (numRows a_))
 
-invertBase : Matnxn -> Matrix
-invertBase a =
-    if numRows a == numColumns a then
-        Err "Not Implemented"
-    else
-        Err "Matrix is not square"
+        Err string ->
+            Err string
+
 
 inv : Matrix -> Matrix
 inv = invert
@@ -640,7 +640,26 @@ B is a matrix of solution vectors horizontally concatenated.
 -}
 solve : Matrix -> Matrix -> Matrix
 solve a b =
-    Err "s" -- getColumns b
+    case (a,b) of
+        (Mat a_, Mat b_) ->
+            if numRows a_ == numRows b_ then
+               let
+                   bs = getColumns b
+                   single = luNoPivotSingle a_
+                   boundApply vec =
+                       case vec of
+                           Mat vec_ ->
+                               applySubstitution single vec_
+                           _ ->
+                               vec
+               in
+                  List.foldr hcat (fromList (numRows a_, 0) []) <| List.map boundApply bs
+            else
+                Err "Dimension mismatch"
+
+        (_, _) ->
+            Err "One of the inputs was malformed"
+
 
 
 {-| Solve a system of equations of the form
