@@ -35,7 +35,6 @@ module Matrix
         , debugPrint
         , to2DList
         , toFlatList
-
         , getScaling
         , luDecomp
         , genIndices
@@ -44,15 +43,14 @@ module Matrix
 import Array
 
 
-{-|
-
-A n x n matrix library.
+{-| A n x n matrix library.
 This library aims to be a reasonably complete suite of linear algebra tools.
 
 Some highlights are that this library has generic sized matrices,
 transposes, multiplication, and inversion.
 
     import Matrix as Mt --and program away!
+
 
 # The matrix type
 
@@ -61,32 +59,39 @@ transposes, multiplication, and inversion.
 
 # Creating matrices
 
-@docs fromList, from2DList, fromString, mat, mats,  zeroes, ones, eye, upper, lower
+@docs fromList, from2DList, fromString, mat, mats, zeroes, ones, eye, upper, lower
 @docs strictLower, strictUpper
+
 
 # Creating vectors
 
 @docs cvec, rvec, vec
 
+
 # Vector operations
 
 @docs cross, dot
+
 
 # Matrix element-wise operations
 
 @docs add, equivalent, sMul, sDiv, map, map2, eMul
 
+
 # Matrix operations
 
 @docs mul, vcat, get, transpose, determinant
+
 
 # Matrix display
 
 @docs prettyPrint, debugPrint
 
+
 # Interop
 
 @docs to2DList, toFlatList
+
 -}
 type alias Matnxn =
     { dimensions : ( Int, Int )
@@ -99,15 +104,19 @@ type Matrix
     | Err String
 
 
+
 -- Matrix Creation
+
 
 {-| Create a (n rows x m columns) matrix with the list as the elements.
 Fails if dimension mismatch. Elements need to be specified in row-major order.
 
-    matrix = Matrix.fromList (2, 3) [
-        [2, 2, 2],
-        [3, 3, 3]
-        ]
+    matrix =
+        Matrix.fromList ( 2, 3 )
+            [ [ 2, 2, 2 ]
+            , [ 3, 3, 3 ]
+            ]
+
 -}
 fromList : ( Int, Int ) -> List Float -> Matrix
 fromList dimensions elements =
@@ -135,10 +144,12 @@ fromArray ( rows, columns ) elements =
 {-| Create a (n x m) matrix with inner lists being rows.
 The following is a 2 x 3 matrix:
 
-    matrix = Matrix.from2DList [
-        [2, 2, 2],
-        [3, 3, 3]
-        ]
+    matrix =
+        Matrix.from2DList
+            [ [ 2, 2, 2 ]
+            , [ 3, 3, 3 ]
+            ]
+
 -}
 from2DList : List (List Float) -> Matrix
 from2DList a =
@@ -167,14 +178,17 @@ from2DList a =
 {-| Create a (n x m) matrix with inner lists being rows.
 The following is a 2 x 3 matrix:
 
-    matrix = Matrix.from2DList [
-        [2, 2, 2],
-        [3, 3, 3]
-        ]
+    matrix =
+        Matrix.from2DList
+            [ [ 2, 2, 2 ]
+            , [ 3, 3, 3 ]
+            ]
+
 -}
 mat : List (List Float) -> Matrix
 mat =
     from2DList
+
 
 {-| Create a (n x m) matrix with inner lists being rows.
 In string format you can use Matlab/Julia-esque syntax.
@@ -184,16 +198,21 @@ The string must begin with [ and end with ].
 
 The following is a 2 x 3 matrix:
 
-    matrix = Matrix.fromString "[ 2 2 2; 3 3 3]"
+    matrix =
+        Matrix.fromString "[ 2 2 2; 3 3 3]"
 
 Any alpha/garbage characters will be set to zero.
+
 -}
 fromString : String -> Matrix
 fromString string =
     from2DList <| matParser string
 
+
 mats : String -> Matrix
-mats = fromString
+mats =
+    fromString
+
 
 {-| Create a column vector from a list
 -}
@@ -265,17 +284,23 @@ eye diagonal =
         Array.initialize (diagonal * diagonal) gen
             |> fromArray ( diagonal, diagonal )
 
+
 {-| Create an nxn upper triangular matrix
 -}
 upper : Int -> Matrix
 upper diagonal =
     let
-        range = List.range 0 (diagonal-1)
+        range =
+            List.range 0 (diagonal - 1)
+
         f i =
-            List.append (List.repeat i 0.0) (List.repeat (diagonal-i) 1.0)
-        list = List.map f range
+            List.append (List.repeat i 0.0) (List.repeat (diagonal - i) 1.0)
+
+        list =
+            List.map f range
     in
-       from2DList list
+        from2DList list
+
 
 {-| Create an nxn strict upper triangular matrix
 This means that elements along the diagonal are zero
@@ -284,11 +309,13 @@ strictUpper : Int -> Matrix
 strictUpper diagonal =
     map2 (-) (upper diagonal) (eye diagonal)
 
+
 {-| Create an nxn lower triangular matrix
 -}
 lower : Int -> Matrix
 lower diagonal =
     transpose <| upper diagonal
+
 
 {-| Create an nxn strict lower triangular matrix
 This means that elements along the diagonal are zero
@@ -297,11 +324,15 @@ strictLower : Int -> Matrix
 strictLower diagonal =
     map2 (-) (transpose <| upper diagonal) (eye diagonal)
 
+
+
 -- Operations
+
 
 {-| Perform matrix multiplication
 
     A * B
+
 -}
 mul : Matrix -> Matrix -> Matrix
 mul a b =
@@ -391,82 +422,115 @@ mulList a_ b_ =
 {-| Get the lu decomposition of a matrix
 Since pivoting isn't implemented, watch out for numerical instability
 -}
-luDecomp : Matrix -> (Matrix, Matrix)
+luDecomp : Matrix -> ( Matrix, Matrix )
 luDecomp a =
     case a of
         Mat a_ ->
             if numRows a_ == numColumns a_ then
-               luSplit a_
+                luSplit a_
             else
-                (Err "Must be a square matrix", Err "")
+                ( Err "Must be a square matrix", Err "" )
 
         Err string ->
-            (Err string, Err "")
+            ( Err string, Err "" )
 
 
 {-| Splits the lu factorized single matrix into two
 -}
-luSplit : Matnxn -> (Matrix, Matrix)
+luSplit : Matnxn -> ( Matrix, Matrix )
 luSplit a =
     let
-        single = luNoPivotSingle a
-        dim = numColumns a
+        single =
+            luNoPivotSingle a
+
+        dim =
+            numColumns a
+
         l =
             eMul single (strictLower dim)
-            |> add (eye dim)
+                |> add (eye dim)
+
         u =
             eMul single (upper dim)
     in
-       (l, u)
+        ( l, u )
+
 
 {-| Performs lu factorization
 -}
 luNoPivotSingle : Matnxn -> Matrix
 luNoPivotSingle a =
     let
-       lu = zeroes a.dimensions
-       luCompute index dest = --i is inner loop j outer loop
-           luComputeElem index a dest -- bind computelem to a
-       indices = genIndices a.dimensions
-    in
-       case lu of
-           Mat lu_ ->
-               Mat <| List.foldl luCompute lu_ indices
-           _ ->
-            lu
+        lu =
+            zeroes a.dimensions
 
-genIndices : (Int , Int) -> List (Int, Int)
-genIndices (i_range, j_range) =
+        --i is inner loop j outer loop
+        -- bind computelem to a
+        luCompute index dest =
+            luComputeElem index a dest
+
+        indices =
+            genIndices a.dimensions
+    in
+        case lu of
+            Mat lu_ ->
+                Mat <| List.foldl luCompute lu_ indices
+
+            _ ->
+                lu
+
+
+genIndices : ( Int, Int ) -> List ( Int, Int )
+genIndices ( i_range, j_range ) =
     let
-        listj = List.concat <| List.map (List.repeat i_range ) <| List.range 1 j_range
-        listi = List.concat <| List.repeat j_range (List.range 1 i_range)
-    in
-       List.map2 (,) listi listj
+        listj =
+            List.concat <| List.map (List.repeat i_range) <| List.range 1 j_range
 
-luComputeElem : (Int, Int) -> Matnxn -> Matnxn -> Matnxn
-luComputeElem (i, j) original lu =
-    let tiny = 10^(-40)
+        listi =
+            List.concat <| List.repeat j_range (List.range 1 i_range)
+    in
+        List.map2 (,) listi listj
+
+
+luComputeElem : ( Int, Int ) -> Matnxn -> Matnxn -> Matnxn
+luComputeElem ( i, j ) original lu =
+    let
+        tiny =
+            10 ^ (-40)
+
         getWithDefault index mat =
             Maybe.withDefault 0.0 (getBase index mat)
-        aij = getWithDefault (i, j) original
-        bjj = Maybe.withDefault tiny <| getBase (j, j) lu
+
+        aij =
+            getWithDefault ( i, j ) original
+
+        bjj =
+            Maybe.withDefault tiny <| getBase ( j, j ) lu
+
         compute index =
-            getWithDefault (i, index) lu * getWithDefault (index, j) lu
+            getWithDefault ( i, index ) lu * getWithDefault ( index, j ) lu
     in
-    if i > j then
-    let k = List.range 1 (j-1) in
-        setBase (i, j) ((aij - (List.sum <| List.map compute k))/bjj) lu
-    else
-    let k = List.range 1 (i-1) in
-        setBase (i, j) (aij - (List.sum <| List.map compute k)) lu
+        if i > j then
+            let
+                k =
+                    List.range 1 (j - 1)
+            in
+                setBase ( i, j ) ((aij - (List.sum <| List.map compute k)) / bjj) lu
+        else
+            let
+                k =
+                    List.range 1 (i - 1)
+            in
+                setBase ( i, j ) (aij - (List.sum <| List.map compute k)) lu
 
 
 getScaling : List (List Float) -> List Float
 getScaling mat =
     List.map (\x -> List.map abs x) mat
-    |> List.map (List.maximum)
-    |> List.map (Maybe.withDefault 0)
-    |> List.map (\x -> 1/ x)
+        |> List.map (List.maximum)
+        |> List.map (Maybe.withDefault 0)
+        |> List.map (\x -> 1 / x)
+
 
 {-| Get an item at index (row, column). Indices are 1-indexed.
 -}
@@ -495,6 +559,7 @@ getBase ( r_index, c_index ) a_ =
         else
             Nothing
 
+
 {-| Get an item at index (row, column). Indices are 1-indexed.
 -}
 set : ( Int, Int ) -> Float -> Matrix -> Matrix
@@ -517,8 +582,12 @@ setBase ( r_index, c_index ) data a_ =
             0 < c_index && c_index <= numColumns a_
     in
         if check_r_bounds && check_c_bounds then
-           { a_ | elements = Array.set ((r_index - 1) * (numColumns a_) + c_index - 1)
-                data a_.elements }
+            { a_
+                | elements =
+                    Array.set ((r_index - 1) * (numColumns a_) + c_index - 1)
+                        data
+                        a_.elements
+            }
         else
             a_
 
@@ -556,6 +625,7 @@ map f a =
         Err string ->
             Err string
 
+
 {-| Map a function over elements of same index between matrices
 -}
 map2 : (Float -> Float -> Float) -> Matrix -> Matrix -> Matrix
@@ -571,18 +641,19 @@ map2Base f a b =
         Err "Unequal Matrix sizes"
 
 
-
 {-| Perform scalar multiplication on a matrix
 -}
 sMul : Float -> Matrix -> Matrix
 sMul a b =
     map ((*) a) b
 
+
 {-| Perform element by element multiplication on a matrix
 -}
 eMul : Matrix -> Matrix -> Matrix
 eMul a b =
     map2 (*) a b
+
 
 {-| Perform scalar division on a matrix
 -}
@@ -646,13 +717,15 @@ determinant a =
     case a of
         Mat a_ ->
             if numRows a_ == numColumns a_ then
-                let single = luNoPivotSingle a_
+                let
+                    single =
+                        luNoPivotSingle a_
                 in
-                List.range 1 (numRows a_)
-                |> List.map (\x -> (x,x))
-                |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
-                |> List.product
-                |> Just
+                    List.range 1 (numRows a_)
+                        |> List.map (\x -> ( x, x ))
+                        |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
+                        |> List.product
+                        |> Just
             else
                 Nothing
 
@@ -982,18 +1055,24 @@ arraymap2 f a b =
         in
             Array.append result (arraymap2 f (dropArr a) (dropArr b))
 
+
+
 --string must be enclosed by brackets
+
+
 matParser : String -> List (List Float)
 matParser string =
     if String.startsWith "[" string && String.endsWith "]" string then
-       String.dropLeft 1 string
-       |> String.dropRight 1
-       |> String.split ";"
-       |> List.map (String.split " ")
-       |> List.map (List.filter (\x -> not <|String.isEmpty x))
-       |> List.map (List.map (\x -> Result.withDefault 0 (String.toFloat x)))
+        String.dropLeft 1 string
+            |> String.dropRight 1
+            |> String.split ";"
+            |> List.map (String.split " ")
+            |> List.map (List.filter (\x -> not <| String.isEmpty x))
+            |> List.map (List.map (\x -> Result.withDefault 0 (String.toFloat x)))
     else
         []
+
+
 
 -- Operators for convenience
 
