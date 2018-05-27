@@ -49,7 +49,7 @@ module Matrix
         , Matrix
         )
 
-{-| A matrix library.
+{-| A matrix library written completely in Elm.
 This library aims to be a reasonably complete suite of linear algebra tools.
 
 Some highlights are that this library has generic sized matrices,
@@ -58,37 +58,37 @@ transposes, multiplication, and inversion.
     import Matrix as Mt --and program away!
 
 
-# The matrix type
+# The Matrix Type
 
 @docs Matrix
 
 
-# Creating matrices
+# Creating Matrices
 
-@docs fromList, from2DList, fromString, mat, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper
-
-
-# Creating vectors
-
-@docs cvec, rvec, vec, cvecFromList, rvecFromList
+@docs fromList, from2DList, mat, fromString, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper
 
 
-# Vector operations
+# Creating Vectors
+
+@docs cvecFromList, rvecFromList, cvec, rvec, vec
+
+
+# Vector Operations
 
 @docs cross, dot
 
 
-# Matrix element-wise operations
+# Matrix Element-wise Operations
 
 @docs add, equivalent, sMul, sDiv, map, map2, eMul
 
 
-# Matrix operations
+# Matrix Operations
 
-@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
 
 
-# Matrix display
+# Matrix Display
 
 @docs toString, debugPrint
 
@@ -187,7 +187,7 @@ from2DList a =
 The following is a 2 x 3 matrix:
 
     matrix =
-        Matrix.from2DList
+        Matrix.mat
             [ [ 2, 2, 2 ]
             , [ 3, 3, 3 ]
             ]
@@ -224,7 +224,7 @@ mats =
     fromString
 
 
-{-| Create a column vector from a list
+{-| Create a column vector from a list.
 
     column =
         Matrix.cvecFromList [ 1, 2, 3, 4 ]
@@ -235,28 +235,28 @@ cvecFromList a =
     fromList ( List.length a, 1 ) a
 
 
-{-| Create a column vector from a list
+{-| Create a column vector from a list.
 -}
 cvec : List Float -> Matrix
 cvec =
     cvecFromList
 
 
-{-| Create a column vector from a list
+{-| Create a column vector from a list.
 -}
 vec : List Float -> Matrix
 vec =
     cvec
 
 
-{-| Create a row vector from a list
+{-| Create a row vector from a list.
 -}
 rvecFromList : List Float -> Matrix
 rvecFromList a =
     fromList ( 1, List.length a ) a
 
 
-{-| Create a row vector from a list
+{-| Create a row vector from a list.
 -}
 rvec : List Float -> Matrix
 rvec =
@@ -270,7 +270,7 @@ rand a =
     Err "Not Implemented"
 
 
-{-| Generate a matrix of ones
+{-| Generate a matrix of ones.
 
     lots_of_ones =
         Matrix.ones ( 4, 3 )
@@ -281,7 +281,7 @@ ones ( rows, columns ) =
     fromArray ( rows, columns ) <| Array.repeat (rows * columns) 1.0
 
 
-{-| Generate a matrix of zeroes
+{-| Generate a matrix of zeroes.
 
     lots_of_zeroes =
         Matrix.zeroes ( 3, 4 )
@@ -292,7 +292,7 @@ zeroes ( rows, columns ) =
     fromArray ( rows, columns ) <| Array.repeat (rows * columns) 0.0
 
 
-{-| Create an nxn identity matrix
+{-| Create an nxn identity matrix.
 
     identity =
         Matrix.eye 3
@@ -311,7 +311,7 @@ eye diagonal =
             |> fromArray ( diagonal, diagonal )
 
 
-{-| Create an nxn upper triangular matrix
+{-| Create an nxn upper triangular matrix.
 
     triangle =
         Matrix.upper 4
@@ -332,8 +332,8 @@ upper diagonal =
         from2DList list
 
 
-{-| Create an nxn strict upper triangular matrix
-This means that elements along the diagonal are zero
+{-| Create an nxn strict upper triangular matrix.
+This means that elements along the diagonal are zero.
 
     striangle =
         Matrix.strictUpper 4
@@ -344,7 +344,7 @@ strictUpper diagonal =
     map2 (-) (upper diagonal) (eye diagonal)
 
 
-{-| Create an nxn lower triangular matrix
+{-| Create an nxn lower triangular matrix.
 
     ltriangle =
         Matrix.lower 4
@@ -355,8 +355,8 @@ lower diagonal =
     transpose <| upper diagonal
 
 
-{-| Create an nxn strict lower triangular matrix
-This means that elements along the diagonal are zero
+{-| Create an nxn strict lower triangular matrix.
+This means that elements along the diagonal are zero.
 
     sltriangle =
         Matrix.strictLower 4
@@ -656,30 +656,31 @@ map2Base f a b =
         Err "Unequal Matrix sizes"
 
 
-{-| Perform scalar multiplication on a matrix
+{-| Perform scalar multiplication on a matrix.
 -}
 sMul : Float -> Matrix -> Matrix
 sMul a b =
     map ((*) a) b
 
 
-{-| Perform element by element multiplication on a matrix
+{-| Perform element by element multiplication on a matrix.
 -}
 eMul : Matrix -> Matrix -> Matrix
 eMul a b =
     map2 (*) a b
 
 
-{-| Perform scalar division on a matrix
+{-| Perform scalar division on a matrix.
 -}
 sDiv : Float -> Matrix -> Matrix
 sDiv a b =
     sMul (1 / a) b
 
 
-{-| Invert a square matrix
-a =
-"[ 2 5; 6 7]"
+{-| Invert a square matrix.
+
+    a =
+        "[ 2 5; 6 7]"
 
     inva =
         invert a
@@ -698,7 +699,7 @@ invert a =
             Err string
 
 
-{-| Shorthand for invert
+{-| Shorthand for invert.
 -}
 inv : Matrix -> Matrix
 inv =
@@ -927,7 +928,7 @@ backSubstitution i u y x =
         setBase ( i, 1 ) xi x
 
 
-{-| Transpose a matrix
+{-| Transpose a matrix.
 -}
 transpose : Matrix -> Matrix
 transpose a =
@@ -950,7 +951,7 @@ transposeBase a_ =
             |> fromArray ( numColumns a_, numRows a_ )
 
 
-{-| Get the determinant of a square matrix
+{-| Get the determinant of a square matrix.
 
     a =
         Matrix.mats "[1 2 3; 4 5 6; 7 8 9]"
@@ -982,7 +983,7 @@ determinant a =
         forwardErrorF "[in determinant]" detBase a
 
 
-{-| Shorthand for determinant
+{-| Shorthand for determinant.
 -}
 det : Matrix -> Maybe Float
 det =
@@ -990,6 +991,16 @@ det =
 
 
 {-| Performs the dot product of two nxn vectors
+
+    x =
+        Matrix.vec [ 1, 0, 0 ]
+
+    y =
+        Matrix.vec [ 0, 1, 0 ]
+
+    zero =
+        Matrix.dot x y
+
 -}
 dot : Matrix -> Matrix -> Maybe Float
 dot a b =
@@ -1020,8 +1031,17 @@ dot a b =
 -- is there a way to do good scalar error handling?
 
 
-{-| Get the cross product of two 3d vectors
-a cross b
+{-| Get the cross product of two 3d vectors. a >< b
+
+    x =
+        Matrix.vec [ 1, 0, 0 ]
+
+    y =
+        Matrix.vec [ 0, 1, 0 ]
+
+    z =
+        Matrix.cross x y
+
 -}
 cross : Matrix -> Matrix -> Matrix
 cross a b =
@@ -1075,10 +1095,17 @@ equalSize a b =
     (numRows a == numRows b) && (numColumns a == numColumns b)
 
 
-{-| Checks if two matrices are equivalent within some epsilon
+{-| Checks if two matrices are equivalent within some epsilon.
+
+    epsilon =
+        10 ^ (-4)
+
+    is_equivalent =
+        equivalent epsilon a b
+
 -}
-equivalent : Matrix -> Matrix -> Float -> Bool
-equivalent a b epsilon =
+equivalent : Float -> Matrix -> Matrix -> Bool
+equivalent epsilon a b =
     case ( a, b ) of
         ( Mat a_, Mat b_ ) ->
             let
@@ -1160,6 +1187,9 @@ hcatBase a b =
 
 
 {-| Returns matrix as flat list
+
+    Matrix.toFlatList (Matrix.eye 2) == [ 1, 0, 0, 1 ]
+
 -}
 toFlatList : Matrix -> List Float
 toFlatList n =
@@ -1172,7 +1202,10 @@ toFlatList n =
 
 
 {-| Returns matrix as 2d list.
-Returns empty list if Matrix is in error
+Returns empty list if Matrix is in error.
+
+    Matrix.to2DList (Matrix.eye 2) == [ [1, 0], [0, 1] ]
+
 -}
 to2DList : Matrix -> List (List Float)
 to2DList n =
@@ -1189,7 +1222,7 @@ to2DListBase z =
     make2D (numColumns z) (Array.toList z.elements)
 
 
-{-| Returns size of matrix
+{-| Returns size of matrix, (rows, columns)
 -}
 size : Matrix -> ( Int, Int )
 size n =
@@ -1258,7 +1291,10 @@ dimToString a =
         "(" ++ arows ++ "," ++ acols ++ ")"
 
 
-{-| Change matrix into string form
+{-| Change matrix into string form, such as what would be displayed in the terminal.
+
+    Matrix.toString (Matrix.eye 3) == " 1 0 0\n 0 1 0\n 0 0 1"
+
 -}
 toString : Matrix -> String
 toString a =
@@ -1289,7 +1325,6 @@ toStringBasic a =
                 |> List.intersperse [ "\n" ]
                 |> List.concat
                 |> List.foldr (++) ""
-
     in
         matrix_string
 
@@ -1309,21 +1344,30 @@ make2D num_row_elem list =
                 List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
 
 
-{-| Returns the rows of a matrix in a list
+{-| Returns the rows of a matrix in a list.
 -}
 getRows : Matrix -> List Matrix
 getRows a =
     List.map rvec <| to2DList a
 
 
-{-| Returns the columns of a matrix in a list
+{-| Returns the columns of a matrix in a list.
 -}
 getColumns : Matrix -> List Matrix
 getColumns a =
     List.map vec <| to2DList (transpose a)
 
 
-{-| Helper to debug print
+{-| Helper to debug print. Most useful in repl.
+
+    > Matrix.debugPrint (Matrix.eye 3)
+    (3, 3) Matrix
+     1 0 0
+     0 1 0
+     0 0 1
+     : ""
+     ""
+
 -}
 debugPrint : Matrix -> String
 debugPrint a =
