@@ -31,6 +31,7 @@ module Matrix
         , vcat
         , transpose
         , determinant
+        , det
         , prettyPrint
         , debugPrint
         , to2DList
@@ -80,7 +81,7 @@ transposes, multiplication, and inversion.
 
 # Matrix operations
 
-@docs mul, vcat, get, transpose, determinant
+@docs mul, vcat, get, set, transpose, determinant, det
 
 
 # Matrix display
@@ -366,6 +367,7 @@ mulList a_ b_ =
             b_list =
                 to2DList <| transposeBase b_
 
+            --collapse a row from the left and column from the right into scalar
             collapse x y =
                 List.sum <| List.map2 (*) x y
 
@@ -622,6 +624,31 @@ invertBase a =
     else
         Err "Matrix is not square"
 
+inv : Matrix -> Matrix
+inv = invert
+
+{-| Solve a system of equations of the form
+Ax = b. You provide A and b and get back x
+Where A is a matrix, and b and x are vectors
+-}
+solveV : Matrix -> Matrix -> Matrix
+solveV a b =
+    forwardError2 "[in solveV]" solveVBase a b
+
+solveVBase : Matnxn -> Matnxn -> Matrix
+solveVBase a b =
+    let
+        single = luNoPivotSingle a
+        b_is_vector =
+            numColumns b == 1
+        dimensions_match =
+
+    in
+        if numColumns b == 1 then
+        else
+            Err "b is not a column vector"
+
+
 {-| Transpose a matrix
 -}
 transpose : Matrix -> Matrix
@@ -665,6 +692,8 @@ determinant a =
     in
     forwardErrorF "[in determinant]" detBase a
 
+det : Matrix -> Maybe Float
+det = determinant
 
 {-| Performs the dot product of two nxn vectors
 -}
