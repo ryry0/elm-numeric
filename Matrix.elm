@@ -482,13 +482,13 @@ luComputeElem ( i, j ) original lu =
             let
                 k =
                     List.range 1 (j - 1)
-            in
+            in -- NRIC 2.3.13
                 setBase ( i, j ) ((aij - (List.sum <| List.map compute k)) / bjj) lu
         else
             let
                 k =
                     List.range 1 (i - 1)
-            in
+            in -- NRIC 2.3.12
                 setBase ( i, j ) (aij - (List.sum <| List.map compute k)) lu
 
 
