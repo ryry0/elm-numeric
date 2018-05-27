@@ -45,6 +45,7 @@ module Matrix
         , luDecomp
         , genIndices
         , invert
+        , inv
         )
 
 import Array
