@@ -34,6 +34,9 @@ module Matrix
         , debugPrint
         , to2DList
         , toFlatList
+
+        , getScaling
+        , luDecomp
         )
 
 import Array
@@ -383,7 +386,86 @@ mulList a_ b_ =
             from2DList <| constructList a_list b_list
 
 
-{-| Get an item at index (row, column)
+{-| Get the lu decomposition of a matrix
+Since pivoting isn't implemented, watch out for numerical instability
+-}
+luDecomp : Matrix -> (Matrix, Matrix)
+luDecomp a =
+    case a of
+        Mat a_ ->
+            if numRows a_ == numColumns a_ then
+               luSplit a_
+            else
+                (Err "Must be a square matrix", Err "")
+
+        Err string ->
+            (Err string, Err "")
+
+
+{-| Splits the lu factorized single matrix into two
+-}
+luSplit : Matnxn -> (Matrix, Matrix)
+luSplit a =
+    let
+        single = luNoPivotSingle a
+        dim = numColumns a
+        l =
+            eMul single (strictLower dim)
+            |> add (eye dim)
+        u =
+            eMul single (upper dim)
+    in
+       (l, u)
+
+{-| Performs lu factorization
+-}
+luNoPivotSingle : Matnxn -> Matrix
+luNoPivotSingle a =
+    let
+       lu = zeroes a.dimensions
+       luCompute index dest = --i is inner loop j outer loop
+           luComputeElem index a dest -- bind computelem to a
+       indices = genIndices a.dimensions
+    in
+       case lu of
+           Mat lu_ ->
+               Mat <| List.foldl luCompute lu_ indices
+           _ ->
+            lu
+
+genIndices : (Int , Int) -> List (Int, Int)
+genIndices (i_range, j_range) =
+    let
+        listj = List.concat <| List.map (List.repeat i_range ) <| List.range 1 j_range
+        listi = List.concat <| List.repeat j_range (List.range 1 i_range)
+    in
+       List.map2 (,) listi listj
+
+luComputeElem : (Int, Int) -> Matnxn -> Matnxn -> Matnxn
+luComputeElem (i, j) original lu =
+    let getWithDefault index mat =
+            Maybe.withDefault 0.0 (getBase index mat)
+        aij = getWithDefault (i, j) original
+        ajj = getWithDefault (j, j) original
+        compute index =
+            getWithDefault (i, index) lu * getWithDefault (index, j) lu
+    in
+    if i > j then
+    let k = List.range 1 (j) in
+        setBase (i, j) ((aij - (List.sum <| List.map compute k))/ajj) lu
+    else
+    let k = List.range 1 (i) in
+        setBase (i, j) (aij - (List.sum <| List.map compute k)) lu
+
+
+getScaling : List (List Float) -> List Float
+getScaling mat =
+    List.map (\x -> List.map abs x) mat
+    |> List.map (List.maximum)
+    |> List.map (Maybe.withDefault 0)
+    |> List.map (\x -> 1/ x)
+
+{-| Get an item at index (row, column). Indices are 1-indexed.
 -}
 get : ( Int, Int ) -> Matrix -> Maybe Float
 get indices a =
@@ -409,6 +491,33 @@ getBase ( r_index, c_index ) a_ =
                 a_.elements
         else
             Nothing
+
+{-| Get an item at index (row, column). Indices are 1-indexed.
+-}
+set : ( Int, Int ) -> Float -> Matrix -> Matrix
+set indices data a =
+    case a of
+        Mat a_ ->
+            Mat <| setBase indices data a_
+
+        Err string ->
+            Err string
+
+
+setBase : ( Int, Int ) -> Float -> Matnxn -> Matnxn
+setBase ( r_index, c_index ) data a_ =
+    let
+        check_r_bounds =
+            0 < r_index && r_index <= numRows a_
+
+        check_c_bounds =
+            0 < c_index && c_index <= numColumns a_
+    in
+        if check_r_bounds && check_c_bounds then
+           { a_ | elements = Array.set ((r_index - 1) * (numColumns a_) + c_index - 1)
+                data a_.elements }
+        else
+            a_
 
 
 {-| Add two matrices of identical dimensions together
