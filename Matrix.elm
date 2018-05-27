@@ -486,13 +486,15 @@ luComputeElem ( i, j ) original lu =
             let
                 k =
                     List.range 1 (j - 1)
-            in -- NRIC 2.3.13
+            in
+                -- NRIC 2.3.13
                 setBase ( i, j ) ((aij - (List.sum <| List.map compute k)) / bjj) lu
         else
             let
                 k =
                     List.range 1 (i - 1)
-            in -- NRIC 2.3.12
+            in
+                -- NRIC 2.3.12
                 setBase ( i, j ) (aij - (List.sum <| List.map compute k)) lu
 
 
@@ -532,6 +534,7 @@ getBase ( r_index, c_index ) a_ =
 set : ( Int, Int ) -> Float -> Matrix -> Matrix
 set indices data a =
     forwardError "[in set]" (\x -> (Mat <| setBase indices data x)) a
+
 
 setBase : ( Int, Int ) -> Float -> Matnxn -> Matnxn
 setBase ( r_index, c_index ) data a_ =
@@ -580,7 +583,8 @@ addBase a_ b_ =
 map : (Float -> Float) -> Matrix -> Matrix
 map f a =
     forwardError "[in map]"
-        (\a_ -> fromArray ( numRows a_, numColumns a_ ) <| Array.map f a_.elements) a
+        (\a_ -> fromArray ( numRows a_, numColumns a_ ) <| Array.map f a_.elements)
+        a
 
 
 {-| Map a function over elements of same index between matrices
@@ -632,7 +636,9 @@ invert a =
 
 
 inv : Matrix -> Matrix
-inv = invert
+inv =
+    invert
+
 
 {-| Solve a system of equations of the form
 AX = B. You provide A and b and get back x
@@ -641,26 +647,30 @@ B is a matrix of solution vectors horizontally concatenated.
 -}
 solve : Matrix -> Matrix -> Matrix
 solve a b =
-    case (a,b) of
-        (Mat a_, Mat b_) ->
+    case ( a, b ) of
+        ( Mat a_, Mat b_ ) ->
             if numRows a_ == numRows b_ then
-               let
-                   bs = getColumns b
-                   single = luNoPivotSingle a_
-                   boundApply vec =
-                       case vec of
-                           Mat vec_ ->
-                               applySubstitution single vec_
-                           _ ->
-                               vec
-               in
-                  List.foldr hcat (fromList (numRows a_, 0) []) <| List.map boundApply bs
+                let
+                    bs =
+                        getColumns b
+
+                    single =
+                        luNoPivotSingle a_
+
+                    boundApply vec =
+                        case vec of
+                            Mat vec_ ->
+                                applySubstitution single vec_
+
+                            _ ->
+                                vec
+                in
+                    List.foldr hcat (fromList ( numRows a_, 0 ) []) <| List.map boundApply bs
             else
                 Err "Dimension mismatch"
 
-        (_, _) ->
+        ( _, _ ) ->
             Err "One of the inputs was malformed"
-
 
 
 {-| Solve a system of equations of the form
@@ -671,53 +681,70 @@ solveV : Matrix -> Matrix -> Matrix
 solveV a b =
     forwardError2 "[in solveV]" solveVBase a b
 
+
 solveVBase : Matnxn -> Matnxn -> Matrix
 solveVBase a b =
     let
         b_is_vector =
             numColumns b == 1
+
         dimensions_match =
             numRows b == numColumns a
+
         a_is_square =
             numColumns a == numRows a
     in
-        case (b_is_vector, dimensions_match, a_is_square) of
-            (True, True, True) ->
+        case ( b_is_vector, dimensions_match, a_is_square ) of
+            ( True, True, True ) ->
                 applySubstitution (luNoPivotSingle a) b
 
-            (False, _, _) ->
+            ( False, _, _ ) ->
                 Err "b is not a vector."
-            (_, False, _) ->
+
+            ( _, False, _ ) ->
                 Err "Dimensions of A and b do not match"
-            (_, _, False) ->
+
+            ( _, _, False ) ->
                 Err "A is not square"
 
+
+
 {- Applies forward and backward substitution, decoupling substitution from
-computing lu decomp
+   computing lu decomp
 -}
+
+
 applySubstitution : Matrix -> Matnxn -> Matrix
 applySubstitution single b =
     let
-        brows = numRows b
-        z = zeroes (brows, 1)
+        brows =
+            numRows b
+
+        z =
+            zeroes ( brows, 1 )
     in
-      case (z, single) of
-          (Mat z_, Mat single_) ->
-              let
-                is = List.range 1 (numRows b)
-                fsBound i y =
-                    forwardSubstitution i single_ b y
+        case ( z, single ) of
+            ( Mat z_, Mat single_ ) ->
+                let
+                    is =
+                        List.range 1 (numRows b)
 
-                y = List.foldl fsBound z_ is
+                    fsBound i y =
+                        forwardSubstitution i single_ b y
 
-                bsBound i x =
-                    backSubstitution i single_ y x
+                    y =
+                        List.foldl fsBound z_ is
 
-                x = List.foldr bsBound z_ is
-              in
-              Mat x
-          _ ->
-              z
+                    bsBound i x =
+                        backSubstitution i single_ y x
+
+                    x =
+                        List.foldr bsBound z_ is
+                in
+                    Mat x
+
+            _ ->
+                z
 
 
 {-| Perform forward substitution remembering that the diagonal of the lower lu
@@ -727,34 +754,43 @@ b is the original passed in vector of b's
 y is the solution, updated piecewise, of L * y = b
 
 Numerical Recipes in C 2.3.6
+
 -}
-forwardSubstitution : Int  -> Matnxn -> Matnxn -> Matnxn -> Matnxn
+forwardSubstitution : Int -> Matnxn -> Matnxn -> Matnxn -> Matnxn
 forwardSubstitution i l b y =
     let
         getWithDefault index mat =
             Maybe.withDefault 0.0 (getBase index mat)
 
         getVecDefault index vec =
-            getWithDefault (index, 1) vec
-
+            getWithDefault ( index, 1 ) vec
 
         yi =
             case i of
                 1 ->
                     getVecDefault i b
+
                 _ ->
                     let
-                        bi = getVecDefault i b
-                        j = List.range 1 (i-1)
-                        lijs = List.map (\curr_j -> getWithDefault (i, curr_j) l) j
-                        yjs = List.map (\curr_j -> getVecDefault curr_j y) j
+                        bi =
+                            getVecDefault i b
+
+                        j =
+                            List.range 1 (i - 1)
+
+                        lijs =
+                            List.map (\curr_j -> getWithDefault ( i, curr_j ) l) j
+
+                        yjs =
+                            List.map (\curr_j -> getVecDefault curr_j y) j
+
                         sum =
                             List.sum <| List.map2 (*) lijs yjs
                     in
-                       bi - sum
-
+                        bi - sum
     in
         setBase ( i, 1 ) yi y
+
 
 {-| Perform forward substitution remembering that the diagonal of the lower lu
 matrix is all ones.
@@ -763,6 +799,7 @@ y is the original passed in vector of b's
 x is the solution, updated piecewise of BOTH Ux = y and the original Ax = b
 
 Numerical Recipes in C 2.3.7
+
 -}
 backSubstitution : Int -> Matnxn -> Matnxn -> Matnxn -> Matnxn
 backSubstitution i u y x =
@@ -771,35 +808,46 @@ backSubstitution i u y x =
             Maybe.withDefault 0.0 (getBase index mat)
 
         getVecDefault index vec =
-            getWithDefault (index, 1) vec
+            getWithDefault ( index, 1 ) vec
 
-        uii = getWithDefault (i, i) u
-        xrows = numRows x
+        uii =
+            getWithDefault ( i, i ) u
+
+        xrows =
+            numRows x
 
         xi =
             if i == xrows then
-                (getVecDefault i y)/(uii)
+                (getVecDefault i y) / (uii)
             else
-
                 let
                     --aij = getWithDefault ( i, j ) original
-                    yi = getVecDefault i y
-                    j = List.range (i + 1) (xrows)
-                    uijs = List.map (\curr_j -> getWithDefault (i, curr_j) u) j
-                    xjs = List.map (\curr_j -> getVecDefault curr_j x) j
+                    yi =
+                        getVecDefault i y
+
+                    j =
+                        List.range (i + 1) (xrows)
+
+                    uijs =
+                        List.map (\curr_j -> getWithDefault ( i, curr_j ) u) j
+
+                    xjs =
+                        List.map (\curr_j -> getVecDefault curr_j x) j
+
                     sum =
                         List.sum <| List.map2 (*) uijs xjs
                 in
-                   (yi - sum)/uii
-
+                    (yi - sum) / uii
     in
         setBase ( i, 1 ) xi x
+
 
 {-| Transpose a matrix
 -}
 transpose : Matrix -> Matrix
 transpose a =
     forwardError "[in transpose]" transposeBase a
+
 
 transposeBase : Matnxn -> Matrix
 transposeBase a_ =
@@ -812,7 +860,6 @@ transposeBase a_ =
                         + (index // numRows a_)
             in
                 Maybe.withDefault 0.0 (Array.get mappedindex a_.elements)
-
     in
         Array.initialize (numColumns a_ * numRows a_) f
             |> fromArray ( numColumns a_, numRows a_ )
@@ -822,24 +869,28 @@ transposeBase a_ =
 -}
 determinant : Matrix -> Maybe Float
 determinant a =
-    let detBase a_ =
-        if numRows a_ == numColumns a_ then
-            let
-                single =
-                    luNoPivotSingle a_
-            in
-                List.range 1 (numRows a_)
-                    |> List.map (\x -> ( x, x ))
-                    |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
-                    |> List.product
-                    |> Just
-        else
-            Nothing
+    let
+        detBase a_ =
+            if numRows a_ == numColumns a_ then
+                let
+                    single =
+                        luNoPivotSingle a_
+                in
+                    List.range 1 (numRows a_)
+                        |> List.map (\x -> ( x, x ))
+                        |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
+                        |> List.product
+                        |> Just
+            else
+                Nothing
     in
-    forwardErrorF "[in determinant]" detBase a
+        forwardErrorF "[in determinant]" detBase a
+
 
 det : Matrix -> Maybe Float
-det = determinant
+det =
+    determinant
+
 
 {-| Performs the dot product of two nxn vectors
 -}
@@ -886,6 +937,7 @@ crossBase a_ b_ =
         let
             getDefault x vec =
                 Maybe.withDefault 0.0 <| getBase x vec
+
             ax =
                 getDefault ( 1, 1 ) a_
 
@@ -915,7 +967,6 @@ crossBase a_ b_ =
                     (ax * by) - (bx * ay)
             in
                 vec <| [ i, j, k ]
-
     else
         Err "One or both vectors are malformed."
 
@@ -984,12 +1035,12 @@ vcatBase a_ b_ =
                     ++ toString bcols
 
 
-
 {-| Concatenate two matrices horizontally.
 -}
 hcat : Matrix -> Matrix -> Matrix
 hcat a b =
     forwardError2 "[in hcat]" hcatBase a b
+
 
 hcatBase : Matnxn -> Matnxn -> Matrix
 hcatBase a b =
@@ -1000,16 +1051,15 @@ hcatBase a b =
         brows =
             numRows b
     in
-    if arows == brows then
-        vcat (transposeBase a) (transposeBase b)
-        |> transpose
-    else
-        Err <|
-            "Number of rows are not equal: a: "
-                ++ toString arows
-                ++ " b: "
-                ++ toString brows
-
+        if arows == brows then
+            vcat (transposeBase a) (transposeBase b)
+                |> transpose
+        else
+            Err <|
+                "Number of rows are not equal: a: "
+                    ++ toString arows
+                    ++ " b: "
+                    ++ toString brows
 
 
 {-| Returns matrix as flat list
@@ -1076,21 +1126,26 @@ forwardError2 error f a b =
         ( Mat a_, Mat b_ ) ->
             f a_ b_
 
+
 forwardError : String -> (Matnxn -> Matrix) -> Matrix -> Matrix
 forwardError error f a =
     case a of
         Mat a_ ->
             f a_
+
         Err string ->
             Err <| "\n" ++ error ++ string
+
 
 forwardErrorF : String -> (Matnxn -> Maybe Float) -> Matrix -> Maybe Float
 forwardErrorF error f a =
     case a of
         Mat a_ ->
             f a_
+
         Err string ->
             Nothing
+
 
 {-| Helper to take a Matrix and stringify its dimensions
 -}
@@ -1158,11 +1213,13 @@ getRows : Matrix -> List Matrix
 getRows a =
     List.map rvec <| to2DList a
 
+
 {-| Returns the columns of a matrix in a list
 -}
 getColumns : Matrix -> List Matrix
 getColumns a =
     List.map vec <| to2DList (transpose a)
+
 
 {-| Helper to debug print
 -}
