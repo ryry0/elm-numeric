@@ -30,6 +30,7 @@ module Matrix
         , mul
         , vcat
         , transpose
+        , determinant
         , prettyPrint
         , debugPrint
         , to2DList
@@ -77,7 +78,7 @@ transposes, multiplication, and inversion.
 
 # Matrix operations
 
-@docs mul, vcat, get, transpose
+@docs mul, vcat, get, transpose, determinant
 
 # Matrix display
 
@@ -642,7 +643,21 @@ transposeBase a_ =
 -}
 determinant : Matrix -> Maybe Float
 determinant a =
-    Nothing
+    case a of
+        Mat a_ ->
+            if numRows a_ == numColumns a_ then
+                let single = luNoPivotSingle a_
+                in
+                List.range 1 (numRows a_)
+                |> List.map (\x -> (x,x))
+                |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
+                |> List.product
+                |> Just
+            else
+                Nothing
+
+        Err _ ->
+            Nothing
 
 
 {-| Performs the dot product of two nxn vectors
