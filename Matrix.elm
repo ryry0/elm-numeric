@@ -37,6 +37,7 @@ module Matrix
 
         , getScaling
         , luDecomp
+        , genIndices
         )
 
 import Array
@@ -443,18 +444,19 @@ genIndices (i_range, j_range) =
 
 luComputeElem : (Int, Int) -> Matnxn -> Matnxn -> Matnxn
 luComputeElem (i, j) original lu =
-    let getWithDefault index mat =
+    let tiny = 10^(-40)
+        getWithDefault index mat =
             Maybe.withDefault 0.0 (getBase index mat)
         aij = getWithDefault (i, j) original
-        ajj = getWithDefault (j, j) original
+        bjj = Maybe.withDefault tiny <| getBase (j, j) lu
         compute index =
             getWithDefault (i, index) lu * getWithDefault (index, j) lu
     in
     if i > j then
-    let k = List.range 1 (j) in
-        setBase (i, j) ((aij - (List.sum <| List.map compute k))/ajj) lu
+    let k = List.range 1 (j-1) in
+        setBase (i, j) ((aij - (List.sum <| List.map compute k))/bjj) lu
     else
-    let k = List.range 1 (i) in
+    let k = List.range 1 (i-1) in
         setBase (i, j) (aij - (List.sum <| List.map compute k)) lu
 
 
