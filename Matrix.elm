@@ -51,7 +51,7 @@ module Matrix
 import Array
 
 
-{-| A n x n matrix library.
+{-| A matrix library.
 This library aims to be a reasonably complete suite of linear algebra tools.
 
 Some highlights are that this library has generic sized matrices,
@@ -121,10 +121,7 @@ type Matrix
 Fails if dimension mismatch. Elements need to be specified in row-major order.
 
     matrix =
-        Matrix.fromList ( 2, 3 )
-            [ [ 2, 2, 2 ]
-            , [ 3, 3, 3 ]
-            ]
+        Matrix.fromList ( 2, 3 ) [ 2, 2, 2  ,  3, 3, 3  ]
 
 -}
 fromList : ( Int, Int ) -> List Float -> Matrix
