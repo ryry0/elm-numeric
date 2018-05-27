@@ -376,7 +376,7 @@ mulList a_ b_ =
                         []
 
                     m :: ms ->
-                        List.map (collapse m) y :: constructList (List.drop 1 x) y
+                        List.map (collapse m) y :: constructList ms y
         in
             from2DList <| constructList a_list b_list
 
