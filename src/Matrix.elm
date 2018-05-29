@@ -136,17 +136,20 @@ Fails if dimension mismatch. Elements need to be specified in row-major order.
 -}
 fromArray : ( Int, Int ) -> Array.Array Float -> Matrix
 fromArray ( rows, columns ) elements =
-    if rows * columns == Array.length elements then
-        Mat { dimensions = ( rows, columns ), elements = elements }
-    else
-        let
-            dimensions =
-                Basics.toString (rows * columns)
+    if rows > -1 && columns > -1 then
+        if rows * columns == Array.length elements then
+            Mat { dimensions = ( rows, columns ), elements = elements }
+        else
+            let
+                dimensions =
+                    Basics.toString (rows * columns)
 
-            numelements =
-                Basics.toString <| Array.length elements
-        in
-            Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
+                numelements =
+                    Basics.toString <| Array.length elements
+            in
+                Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
+    else
+        Err <| "Invalid dimensions."
 
 
 {-| Create a (n x m) matrix with inner lists being rows.
@@ -278,7 +281,10 @@ rand a =
 -}
 ones : ( Int, Int ) -> Matrix
 ones ( rows, columns ) =
-    fromArray ( rows, columns ) <| Array.repeat (rows * columns) 1.0
+    if rows > -1 && columns > -1 then
+        fromArray ( rows, columns ) <| Array.repeat (rows * columns) 1.0
+    else
+        Err <| "Invalid dimensions."
 
 
 {-| Generate a matrix of zeroes.
@@ -289,7 +295,10 @@ ones ( rows, columns ) =
 -}
 zeroes : ( Int, Int ) -> Matrix
 zeroes ( rows, columns ) =
-    fromArray ( rows, columns ) <| Array.repeat (rows * columns) 0.0
+    if rows > -1 && columns > -1 then
+        fromArray ( rows, columns ) <| Array.repeat (rows * columns) 0.0
+    else
+        Err <| "Invalid dimensions."
 
 
 {-| Create an nxn identity matrix.
@@ -300,15 +309,19 @@ zeroes ( rows, columns ) =
 -}
 eye : Int -> Matrix
 eye diagonal =
-    let
-        gen x =
-            if x % (diagonal + 1) == 0 then
-                1
-            else
-                0
-    in
-        Array.initialize (diagonal * diagonal) gen
-            |> fromArray ( diagonal, diagonal )
+    if diagonal > -1 then
+        let
+            gen x =
+                if x % (diagonal + 1) == 0 then
+                    1
+                else
+                    0
+        in
+            Array.initialize (diagonal * diagonal) gen
+                |> fromArray ( diagonal, diagonal )
+    else
+        Err "Invalid dimensions."
+
 
 
 {-| Create an nxn upper triangular matrix.
@@ -319,17 +332,20 @@ eye diagonal =
 -}
 upper : Int -> Matrix
 upper diagonal =
-    let
-        range =
-            List.range 0 (diagonal - 1)
+    if diagonal > -1 then
+        let
+            range =
+                List.range 0 (diagonal - 1)
 
-        f i =
-            List.append (List.repeat i 0.0) (List.repeat (diagonal - i) 1.0)
+            f i =
+                List.append (List.repeat i 0.0) (List.repeat (diagonal - i) 1.0)
 
-        list =
-            List.map f range
-    in
-        from2DList list
+            list =
+                List.map f range
+        in
+            from2DList list
+    else
+        Err "Invalid dimensions."
 
 
 {-| Create an nxn strict upper triangular matrix.
