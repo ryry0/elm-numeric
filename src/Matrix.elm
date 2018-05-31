@@ -1201,6 +1201,30 @@ hcatBase a b =
                     ++ " b: "
                     ++ Basics.toString brows
 
+slice : ((Int, Int), (Int, Int)) -> Matrix -> Matrix
+slice indices mat =
+    forwardError "[in slice]" (sliceBase indices) mat
+
+sliceBase : ((Int, Int), (Int, Int)) -> Matnxn -> Matrix
+sliceBase (row_indices, column_indices) mat =
+    let
+        (rbeg, rend) = row_indices
+        (cbeg, cend) = column_indices
+        check_r_bounds = 0 < rbeg && rend <= numRows mat &&
+            0 < rbeg && rend <= numRows mat
+        check_c_bounds = 0 < cbeg && cend <= numColumns mat &&
+            0 < cbeg && cend <= numColumns mat
+    in
+       if check_c_bounds && check_r_bounds then
+          let
+              array = []
+          in
+          fromArray (rend - (rbeg - 1), cend - (cbeg - 1)) <| Array.fromList array
+       else
+          Err "Incorrect Indices"
+
+
+
 
 {-| Returns matrix as flat list
 
