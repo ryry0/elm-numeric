@@ -46,6 +46,7 @@ module Matrix
         , invert
         , inv
         , size
+        , slice
         , Matrix
         )
 
@@ -85,7 +86,7 @@ transposes, multiplication, and inversion.
 
 # Matrix Operations
 
-@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size, slice
 
 
 # Matrix Display
@@ -321,7 +322,6 @@ eye diagonal =
                 |> fromArray ( diagonal, diagonal )
     else
         Err "Invalid dimensions."
-
 
 
 {-| Create an nxn upper triangular matrix.
@@ -1201,29 +1201,60 @@ hcatBase a b =
                     ++ " b: "
                     ++ Basics.toString brows
 
-slice : ((Int, Int), (Int, Int)) -> Matrix -> Matrix
-slice indices mat =
-    forwardError "[in slice]" (sliceBase indices) mat
 
-sliceBase : ((Int, Int), (Int, Int)) -> Matnxn -> Matrix
-sliceBase (row_indices, column_indices) mat =
+{-| Slice a matrix and get a subset, from (row, column) to (row, column)
+
+    a =
+        Matrix.mat
+            [ [ 1, 0, 0 ]
+            , [ 0, 1, 1 ]
+            , [ 0, 1, 1 ]
+            ]
+
+    lower_right_ones =
+        Matrix.slice ( 2, 2 ) ( 3, 3 ) a
+
+-}
+slice : ( Int, Int ) -> ( Int, Int ) -> Matrix -> Matrix
+slice first_index last_index mat =
+    forwardError "[in slice]" (sliceBase first_index last_index) mat
+
+
+sliceBase : ( Int, Int ) -> ( Int, Int ) -> Matnxn -> Matrix
+sliceBase first_index last_index mat =
     let
-        (rbeg, rend) = row_indices
-        (cbeg, cend) = column_indices
-        check_r_bounds = 0 < rbeg && rend <= numRows mat &&
-            0 < rbeg && rend <= numRows mat
-        check_c_bounds = 0 < cbeg && cend <= numColumns mat &&
-            0 < cbeg && cend <= numColumns mat
+        ( rbeg, cbeg ) =
+            first_index
+
+        ( rend, cend ) =
+            last_index
+
+        num_columns =
+            numColumns mat
+
+        num_rows =
+            numRows mat
+
+        check_r_bounds =
+            0 < rbeg && rbeg <= rend && rend <= num_rows
+
+        check_c_bounds =
+            0 < cbeg && cbeg <= cend && cend <= num_columns
     in
-       if check_c_bounds && check_r_bounds then
-          let
-              array = []
-          in
-          fromArray (rend - (rbeg - 1), cend - (cbeg - 1)) <| Array.fromList array
-       else
-          Err "Incorrect Indices"
+        if check_c_bounds && check_r_bounds then
+            let
+                rowslices x =
+                    Array.slice (x * num_columns + cbeg - 1) (x * num_columns + cend) mat.elements
 
+                row_indices =
+                    List.range (rbeg - 1) (rend - 1)
 
+                array =
+                    List.foldr (\x acc -> Array.append (rowslices x) acc) (Array.fromList []) row_indices
+            in
+                fromArray ( rend - (rbeg - 1), cend - (cbeg - 1) ) array
+        else
+            Err "Incorrect Indices"
 
 
 {-| Returns matrix as flat list
