@@ -15,7 +15,10 @@ This library aims to be a reasonably complete suite of linear algebra tools.
 Some highlights are that this library has generic sized matrices,
 transposes, multiplication, and inversion.
 
-    import Matrix as Mt --and program away!
+    import Matrix as Mt
+
+
+    --and program away!
 
 
 # The Matrix Type
@@ -264,7 +267,7 @@ eye : Int -> Matrix
 eye diagonal =
     let
         gen x =
-            if modBy x (diagonal + 1) == 0 then
+            if modBy (diagonal + 1) x == 0 then
                 1
 
             else
@@ -913,7 +916,7 @@ transposeBase a_ =
         f index =
             let
                 mappedindex =
-                    modBy index (numRows a_)
+                    modBy (numRows a_) index
                         * numColumns a_
                         + (index // numRows a_)
             in
