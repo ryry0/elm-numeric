@@ -1,53 +1,13 @@
-module Matrix
-    exposing
-        ( fromList
-        , from2DList
-        , fromString
-        , mat
-        , mats
-        , cvecFromList
-        , rvecFromList
-        , cvec
-        , rvec
-        , zeroes
-        , ones
-        , eye
-        , upper
-        , lower
-        , strictUpper
-        , strictLower
-        , vec
-        , dot
-        , cross
-        , sMul
-        , sDiv
-        , equivalent
-        , add
-        , eMul
-        , get
-        , set
-        , map
-        , map2
-        , mul
-        , vcat
-        , hcat
-        , getRows
-        , getColumns
-        , transpose
-        , determinant
-        , det
-        , solveV
-        , solve
-        , toString
-        , debugPrint
-        , to2DList
-        , toFlatList
-        , luDecomp
-        , invert
-        , inv
-        , size
-        , Matrix
-        )
+module Matrix exposing
+    ( Matrix
+    , fromList, from2DList, mat, fromString, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper
+    , cvecFromList, rvecFromList, cvec, rvec, vec
+    , cross, dot
+    , add, equivalent, sMul, sDiv, map, map2, eMul
+    , mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
+    , toString, debugPrint
+    , to2DList, toFlatList
+    )
 
 {-| A matrix library written completely in Elm.
 This library aims to be a reasonably complete suite of linear algebra tools.
@@ -138,15 +98,16 @@ fromArray : ( Int, Int ) -> Array.Array Float -> Matrix
 fromArray ( rows, columns ) elements =
     if rows * columns == Array.length elements then
         Mat { dimensions = ( rows, columns ), elements = elements }
+
     else
         let
             dimensions =
-                Basics.toString (rows * columns)
+                Debug.toString (rows * columns)
 
             numelements =
-                Basics.toString <| Array.length elements
+                Debug.toString <| Array.length elements
         in
-            Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
+        Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
 
 
 {-| Create a (n x m) matrix with inner lists being rows.
@@ -174,10 +135,11 @@ from2DList a =
                 is_correct =
                     List.all ((==) columns) <| List.map List.length a
             in
-                if is_correct then
-                    fromList ( rows, columns ) <| List.concat a
-                else
-                    Err <| "One or more of the sublist rows are malformed"
+            if is_correct then
+                fromList ( rows, columns ) <| List.concat a
+
+            else
+                Err <| "One or more of the sublist rows are malformed"
 
         Nothing ->
             fromList ( 0, 0 ) []
@@ -302,13 +264,14 @@ eye : Int -> Matrix
 eye diagonal =
     let
         gen x =
-            if x % (diagonal + 1) == 0 then
+            if modBy x (diagonal + 1) == 0 then
                 1
+
             else
                 0
     in
-        Array.initialize (diagonal * diagonal) gen
-            |> fromArray ( diagonal, diagonal )
+    Array.initialize (diagonal * diagonal) gen
+        |> fromArray ( diagonal, diagonal )
 
 
 {-| Create an nxn upper triangular matrix.
@@ -329,7 +292,7 @@ upper diagonal =
         list =
             List.map f range
     in
-        from2DList list
+    from2DList list
 
 
 {-| Create an nxn strict upper triangular matrix.
@@ -403,12 +366,13 @@ mulList a_ b_ =
     if numColumns a_ /= numRows b_ then
         let
             acolumns =
-                Basics.toString <| numColumns a_
+                Debug.toString <| numColumns a_
 
             brows =
-                Basics.toString <| numRows b_
+                Debug.toString <| numRows b_
         in
-            Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
+        Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
+
     else
         let
             a_list =
@@ -430,7 +394,7 @@ mulList a_ b_ =
                     m :: ms ->
                         List.map (collapse m) y :: constructList ms y
         in
-            from2DList <| constructList a_list b_list
+        from2DList <| constructList a_list b_list
 
 
 {-| Get the lu decomposition of a matrix
@@ -442,6 +406,7 @@ luDecomp a =
         Mat a_ ->
             if numRows a_ == numColumns a_ then
                 luSplit a_
+
             else
                 ( Err "Must be a square matrix", Err "" )
 
@@ -467,7 +432,7 @@ luSplit a =
         u =
             eMul single (upper dim)
     in
-        ( l, u )
+    ( l, u )
 
 
 {-| Performs lu factorization
@@ -486,12 +451,12 @@ luNoPivotSingle a =
         indices =
             genIndices a.dimensions
     in
-        case lu of
-            Mat lu_ ->
-                Mat <| List.foldl luCompute lu_ indices
+    case lu of
+        Mat lu_ ->
+            Mat <| List.foldl luCompute lu_ indices
 
-            _ ->
-                lu
+        _ ->
+            lu
 
 
 genIndices : ( Int, Int ) -> List ( Int, Int )
@@ -503,17 +468,17 @@ genIndices ( i_range, j_range ) =
         listi =
             List.concat <| List.repeat j_range (List.range 1 i_range)
     in
-        List.map2 (,) listi listj
+    List.map2 (\a b -> ( a, b )) listi listj
 
 
 luComputeElem : ( Int, Int ) -> Matnxn -> Matnxn -> Matnxn
 luComputeElem ( i, j ) original lu =
     let
         tiny =
-            10 ^ (-40)
+            10 ^ -40
 
-        getWithDefault index mat =
-            Maybe.withDefault 0.0 (getBase index mat)
+        getWithDefault index m =
+            Maybe.withDefault 0.0 (getBase index m)
 
         aij =
             getWithDefault ( i, j ) original
@@ -524,26 +489,27 @@ luComputeElem ( i, j ) original lu =
         compute index =
             getWithDefault ( i, index ) lu * getWithDefault ( index, j ) lu
     in
-        if i > j then
-            let
-                k =
-                    List.range 1 (j - 1)
-            in
-                -- NRIC 2.3.13
-                setBase ( i, j ) ((aij - (List.sum <| List.map compute k)) / bjj) lu
-        else
-            let
-                k =
-                    List.range 1 (i - 1)
-            in
-                -- NRIC 2.3.12
-                setBase ( i, j ) (aij - (List.sum <| List.map compute k)) lu
+    if i > j then
+        let
+            k =
+                List.range 1 (j - 1)
+        in
+        -- NRIC 2.3.13
+        setBase ( i, j ) ((aij - (List.sum <| List.map compute k)) / bjj) lu
+
+    else
+        let
+            k =
+                List.range 1 (i - 1)
+        in
+        -- NRIC 2.3.12
+        setBase ( i, j ) (aij - (List.sum <| List.map compute k)) lu
 
 
 getScaling : List (List Float) -> List Float
-getScaling mat =
-    List.map (\x -> List.map abs x) mat
-        |> List.map (List.maximum)
+getScaling m =
+    List.map (\x -> List.map abs x) m
+        |> List.map List.maximum
         |> List.map (Maybe.withDefault 0)
         |> List.map (\x -> 1 / x)
 
@@ -572,18 +538,19 @@ getBase ( r_index, c_index ) a_ =
         check_c_bounds =
             0 < c_index && c_index <= numColumns a_
     in
-        if check_r_bounds && check_c_bounds then
-            Array.get ((r_index - 1) * (numColumns a_) + c_index - 1)
-                a_.elements
-        else
-            Nothing
+    if check_r_bounds && check_c_bounds then
+        Array.get ((r_index - 1) * numColumns a_ + c_index - 1)
+            a_.elements
+
+    else
+        Nothing
 
 
 {-| Get an item at index (row, column). Indices are 1-indexed.
 -}
 set : ( Int, Int ) -> Float -> Matrix -> Matrix
 set indices data a =
-    forwardError "[in set]" (\x -> (Mat <| setBase indices data x)) a
+    forwardError "[in set]" (\x -> Mat <| setBase indices data x) a
 
 
 setBase : ( Int, Int ) -> Float -> Matnxn -> Matnxn
@@ -595,15 +562,16 @@ setBase ( r_index, c_index ) data a_ =
         check_c_bounds =
             0 < c_index && c_index <= numColumns a_
     in
-        if check_r_bounds && check_c_bounds then
-            { a_
-                | elements =
-                    Array.set ((r_index - 1) * (numColumns a_) + c_index - 1)
-                        data
-                        a_.elements
-            }
-        else
-            a_
+    if check_r_bounds && check_c_bounds then
+        { a_
+            | elements =
+                Array.set ((r_index - 1) * numColumns a_ + c_index - 1)
+                    data
+                    a_.elements
+        }
+
+    else
+        a_
 
 
 {-| Add two matrices of identical dimensions together
@@ -621,6 +589,7 @@ addBase : Matnxn -> Matnxn -> Matrix
 addBase a_ b_ =
     if equalSize a_ b_ then
         fromArray ( numRows a_, numColumns a_ ) <| arraymap2 (+) a_.elements b_.elements
+
     else
         let
             adims =
@@ -629,7 +598,7 @@ addBase a_ b_ =
             bdims =
                 dimToString b_
         in
-            Err <| "Matrices not equal size. a: " ++ adims ++ ", b: " ++ bdims
+        Err <| "Matrices not equal size. a: " ++ adims ++ ", b: " ++ bdims
 
 
 {-| Map a function over all elements individually
@@ -652,6 +621,7 @@ map2Base : (Float -> Float -> Float) -> Matnxn -> Matnxn -> Matrix
 map2Base f a b =
     if equalSize a b then
         fromArray a.dimensions <| arraymap2 f a.elements b.elements
+
     else
         Err "Unequal Matrix sizes"
 
@@ -733,15 +703,16 @@ solve a b =
                     single =
                         luNoPivotSingle a_
 
-                    boundApply vec =
-                        case vec of
+                    boundApply v =
+                        case v of
                             Mat vec_ ->
                                 applySubstitution single vec_
 
                             _ ->
-                                vec
+                                v
                 in
-                    List.foldr hcat (fromList ( numRows a_, 0 ) []) <| List.map boundApply bs
+                List.foldr hcat (fromList ( numRows a_, 0 ) []) <| List.map boundApply bs
+
             else
                 Err "Dimension mismatch"
 
@@ -780,18 +751,18 @@ solveVBase a b =
         a_is_square =
             numColumns a == numRows a
     in
-        case ( b_is_vector, dimensions_match, a_is_square ) of
-            ( True, True, True ) ->
-                applySubstitution (luNoPivotSingle a) b
+    case ( b_is_vector, dimensions_match, a_is_square ) of
+        ( True, True, True ) ->
+            applySubstitution (luNoPivotSingle a) b
 
-            ( False, _, _ ) ->
-                Err "b is not a vector."
+        ( False, _, _ ) ->
+            Err "b is not a vector."
 
-            ( _, False, _ ) ->
-                Err "Dimensions of A and b do not match"
+        ( _, False, _ ) ->
+            Err "Dimensions of A and b do not match"
 
-            ( _, _, False ) ->
-                Err "A is not square"
+        ( _, _, False ) ->
+            Err "A is not square"
 
 
 
@@ -809,35 +780,35 @@ applySubstitution single b =
         z =
             zeroes ( brows, 1 )
     in
-        case ( z, single ) of
-            ( Mat z_, Mat single_ ) ->
-                let
-                    is =
-                        List.range 1 (numRows b)
+    case ( z, single ) of
+        ( Mat z_, Mat single_ ) ->
+            let
+                is =
+                    List.range 1 (numRows b)
 
-                    fsBound i y =
-                        forwardSubstitution i single_ b y
+                fsBound i y_ =
+                    forwardSubstitution i single_ b y_
 
-                    y =
-                        List.foldl fsBound z_ is
+                y =
+                    List.foldl fsBound z_ is
 
-                    bsBound i x =
-                        backSubstitution i single_ y x
+                bsBound i x_ =
+                    backSubstitution i single_ y x_
 
-                    x =
-                        List.foldr bsBound z_ is
-                in
-                    Mat x
+                x =
+                    List.foldr bsBound z_ is
+            in
+            Mat x
 
-            _ ->
-                z
+        _ ->
+            z
 
 
 {-| Perform forward substitution remembering that the diagonal of the lower lu
 matrix is all ones.
 l is technically the lower lu matrix
 b is the original passed in vector of b's
-y is the solution, updated piecewise, of L * y = b
+y is the solution, updated piecewise, of L \* y = b
 
 Numerical Recipes in C 2.3.6
 
@@ -845,11 +816,11 @@ Numerical Recipes in C 2.3.6
 forwardSubstitution : Int -> Matnxn -> Matnxn -> Matnxn -> Matnxn
 forwardSubstitution i l b y =
     let
-        getWithDefault index mat =
-            Maybe.withDefault 0.0 (getBase index mat)
+        getWithDefault index m =
+            Maybe.withDefault 0.0 (getBase index m)
 
-        getVecDefault index vec =
-            getWithDefault ( index, 1 ) vec
+        getVecDefault index v =
+            getWithDefault ( index, 1 ) v
 
         yi =
             case i of
@@ -873,9 +844,9 @@ forwardSubstitution i l b y =
                         sum =
                             List.sum <| List.map2 (*) lijs yjs
                     in
-                        bi - sum
+                    bi - sum
     in
-        setBase ( i, 1 ) yi y
+    setBase ( i, 1 ) yi y
 
 
 {-| Perform forward substitution remembering that the diagonal of the lower lu
@@ -890,11 +861,11 @@ Numerical Recipes in C 2.3.7
 backSubstitution : Int -> Matnxn -> Matnxn -> Matnxn -> Matnxn
 backSubstitution i u y x =
     let
-        getWithDefault index mat =
-            Maybe.withDefault 0.0 (getBase index mat)
+        getWithDefault index m =
+            Maybe.withDefault 0.0 (getBase index m)
 
-        getVecDefault index vec =
-            getWithDefault ( index, 1 ) vec
+        getVecDefault index v =
+            getWithDefault ( index, 1 ) v
 
         uii =
             getWithDefault ( i, i ) u
@@ -904,7 +875,8 @@ backSubstitution i u y x =
 
         xi =
             if i == xrows then
-                (getVecDefault i y) / (uii)
+                getVecDefault i y / uii
+
             else
                 let
                     --aij = getWithDefault ( i, j ) original
@@ -912,7 +884,7 @@ backSubstitution i u y x =
                         getVecDefault i y
 
                     j =
-                        List.range (i + 1) (xrows)
+                        List.range (i + 1) xrows
 
                     uijs =
                         List.map (\curr_j -> getWithDefault ( i, curr_j ) u) j
@@ -923,9 +895,9 @@ backSubstitution i u y x =
                     sum =
                         List.sum <| List.map2 (*) uijs xjs
                 in
-                    (yi - sum) / uii
+                (yi - sum) / uii
     in
-        setBase ( i, 1 ) xi x
+    setBase ( i, 1 ) xi x
 
 
 {-| Transpose a matrix.
@@ -941,14 +913,14 @@ transposeBase a_ =
         f index =
             let
                 mappedindex =
-                    (index % numRows a_)
-                        * (numColumns a_)
+                    modBy index (numRows a_)
+                        * numColumns a_
                         + (index // numRows a_)
             in
-                Maybe.withDefault 0.0 (Array.get mappedindex a_.elements)
+            Maybe.withDefault 0.0 (Array.get mappedindex a_.elements)
     in
-        Array.initialize (numColumns a_ * numRows a_) f
-            |> fromArray ( numColumns a_, numRows a_ )
+    Array.initialize (numColumns a_ * numRows a_) f
+        |> fromArray ( numColumns a_, numRows a_ )
 
 
 {-| Get the determinant of a square matrix.
@@ -957,8 +929,9 @@ transposeBase a_ =
         Matrix.mats "[1 2 3; 4 5 6; 7 8 9]"
 
     is_singular =
-        if (determinant a) == 0 then
+        if determinant a == 0 then
             "Matrix is singular"
+
         else
             "Matrix is not singular"
 
@@ -972,15 +945,16 @@ determinant a =
                     single =
                         luNoPivotSingle a_
                 in
-                    List.range 1 (numRows a_)
-                        |> List.map (\x -> ( x, x ))
-                        |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
-                        |> List.product
-                        |> Just
+                List.range 1 (numRows a_)
+                    |> List.map (\x -> ( x, x ))
+                    |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
+                    |> List.product
+                    |> Just
+
             else
                 Nothing
     in
-        forwardErrorF "[in determinant]" detBase a
+    forwardErrorF "[in determinant]" detBase a
 
 
 {-| Shorthand for determinant.
@@ -1014,14 +988,15 @@ dot a b =
                     numColumns b_ == 1
 
                 same_length =
-                    (numRows a_) == (numRows b_)
+                    numRows a_ == numRows b_
             in
-                if a_is_vector && b_is_vector && same_length then
-                    arraymap2 (*) a_.elements b_.elements
-                        |> Array.foldr (+) 0
-                        |> Just
-                else
-                    Nothing
+            if a_is_vector && b_is_vector && same_length then
+                arraymap2 (*) a_.elements b_.elements
+                    |> Array.foldr (+) 0
+                    |> Just
+
+            else
+                Nothing
 
         ( _, _ ) ->
             Nothing
@@ -1052,8 +1027,8 @@ crossBase : Matnxn -> Matnxn -> Matrix
 crossBase a_ b_ =
     if check3dVec a_ && check3dVec b_ then
         let
-            getDefault x vec =
-                Maybe.withDefault 0.0 <| getBase x vec
+            getDefault x v =
+                Maybe.withDefault 0.0 <| getBase x v
 
             ax =
                 getDefault ( 1, 1 ) a_
@@ -1073,17 +1048,18 @@ crossBase a_ b_ =
             bz =
                 getDefault ( 3, 1 ) b_
         in
-            let
-                i =
-                    (ay * bz) - (by * az)
+        let
+            i =
+                (ay * bz) - (by * az)
 
-                j =
-                    -1 * ((ax * bz) - (bx * az))
+            j =
+                -1 * ((ax * bz) - (bx * az))
 
-                k =
-                    (ax * by) - (bx * ay)
-            in
-                vec <| [ i, j, k ]
+            k =
+                (ax * by) - (bx * ay)
+        in
+        vec <| [ i, j, k ]
+
     else
         Err "One or both vectors are malformed."
 
@@ -1098,7 +1074,7 @@ equalSize a b =
 {-| Checks if two matrices are equivalent within some epsilon.
 
     epsilon =
-        10 ^ (-4)
+        10 ^ -4
 
     is_equivalent =
         equivalent epsilon a b
@@ -1118,10 +1094,11 @@ equivalent epsilon a b =
                         |> Array.toList
                         |> List.all ((==) True)
             in
-                if equal_size && equal_members then
-                    True
-                else
-                    False
+            if equal_size && equal_members then
+                True
+
+            else
+                False
 
         _ ->
             False
@@ -1149,14 +1126,15 @@ vcatBase a_ b_ =
         brows =
             numRows b_
     in
-        if acols == bcols then
-            fromArray ( arows + brows, acols ) (Array.append a_.elements b_.elements)
-        else
-            Err <|
-                "Number of columns are not equal: a: "
-                    ++ Basics.toString acols
-                    ++ " b: "
-                    ++ Basics.toString bcols
+    if acols == bcols then
+        fromArray ( arows + brows, acols ) (Array.append a_.elements b_.elements)
+
+    else
+        Err <|
+            "Number of columns are not equal: a: "
+                ++ Debug.toString acols
+                ++ " b: "
+                ++ Debug.toString bcols
 
 
 {-| Concatenate two matrices horizontally.
@@ -1175,15 +1153,16 @@ hcatBase a b =
         brows =
             numRows b
     in
-        if arows == brows then
-            vcat (transposeBase a) (transposeBase b)
-                |> transpose
-        else
-            Err <|
-                "Number of rows are not equal: a: "
-                    ++ Basics.toString arows
-                    ++ " b: "
-                    ++ Basics.toString brows
+    if arows == brows then
+        vcat (transposeBase a) (transposeBase b)
+            |> transpose
+
+    else
+        Err <|
+            "Number of rows are not equal: a: "
+                ++ Debug.toString arows
+                ++ " b: "
+                ++ Debug.toString brows
 
 
 {-| Returns matrix as flat list
@@ -1204,7 +1183,7 @@ toFlatList n =
 {-| Returns matrix as 2d list.
 Returns empty list if Matrix is in error.
 
-    Matrix.to2DList (Matrix.eye 2) == [ [1, 0], [0, 1] ]
+    Matrix.to2DList (Matrix.eye 2) == [ [ 1, 0 ], [ 0, 1 ] ]
 
 -}
 to2DList : Matrix -> List (List Float)
@@ -1283,12 +1262,12 @@ dimToString : Matnxn -> String
 dimToString a =
     let
         arows =
-            Basics.toString <| numRows a
+            Debug.toString <| numRows a
 
         acols =
-            Basics.toString <| numColumns a
+            Debug.toString <| numColumns a
     in
-        "(" ++ arows ++ "," ++ acols ++ ")"
+    "(" ++ arows ++ "," ++ acols ++ ")"
 
 
 {-| Change matrix into string form, such as what would be displayed in the terminal.
@@ -1299,8 +1278,8 @@ dimToString a =
 toString : Matrix -> String
 toString a =
     case a of
-        Mat mat ->
-            toStringBasic mat
+        Mat m ->
+            toStringBasic m
 
         Err string ->
             string
@@ -1314,7 +1293,7 @@ toStringBasic a =
         strings =
             a.elements
                 |> Array.toList
-                |> List.map Basics.toString
+                |> List.map Debug.toString
                 |> List.map ((++) " ")
 
         structured_strings =
@@ -1326,7 +1305,7 @@ toStringBasic a =
                 |> List.concat
                 |> List.foldr (++) ""
     in
-        matrix_string
+    matrix_string
 
 
 {-| Helper to re-2dify a flat matrix
@@ -1340,6 +1319,7 @@ make2D num_row_elem list =
         items ->
             if List.length list < num_row_elem then
                 [ list ]
+
             else
                 List.take num_row_elem list :: make2D num_row_elem (List.drop num_row_elem list)
 
@@ -1373,12 +1353,12 @@ debugPrint : Matrix -> String
 debugPrint a =
     let
         description_string =
-            Basics.toString (size a) ++ " Matrix\n"
+            Debug.toString (size a) ++ " Matrix\n"
 
         final_string =
             description_string ++ toString a ++ "\n"
     in
-        Debug.log (final_string) ""
+    Debug.log final_string ""
 
 
 {-| Get the number of rows in a matrix
@@ -1399,10 +1379,7 @@ numColumns a =
 -}
 check3dVec : Matnxn -> Bool
 check3dVec a =
-    if numRows a == 3 && numColumns a == 1 then
-        True
-    else
-        False
+    numRows a == 3 && numColumns a == 1
 
 
 {-| Map2 for arrays
@@ -1411,10 +1388,11 @@ arraymap2 : (a -> b -> c) -> Array.Array a -> Array.Array b -> Array.Array c
 arraymap2 f a b =
     if Array.isEmpty a || Array.isEmpty b then
         Array.fromList []
+
     else
         let
-            dropArr a =
-                Array.slice 1 (Array.length a) a
+            dropArr aa =
+                Array.slice 1 (Array.length aa) aa
 
             result =
                 case ( Array.get 0 a, Array.get 0 b ) of
@@ -1424,7 +1402,7 @@ arraymap2 f a b =
                     _ ->
                         Array.fromList []
         in
-            Array.append result (arraymap2 f (dropArr a) (dropArr b))
+        Array.append result (arraymap2 f (dropArr a) (dropArr b))
 
 
 
@@ -1439,24 +1417,7 @@ matParser string =
             |> String.split ";"
             |> List.map (String.split " ")
             |> List.map (List.filter (\x -> not <| String.isEmpty x))
-            |> List.map (List.map (\x -> Result.withDefault 0 (String.toFloat x)))
+            |> List.map (List.map (\x -> Maybe.withDefault 0 (String.toFloat x)))
+
     else
         []
-
-
-
--- Operators for convenience
-
-
-{-| Matrix multiply
--}
-(**) : Matrix -> Matrix -> Matrix
-(**) =
-    mul
-
-
-{-| alias for add function
--}
-(.+) : Matrix -> Matrix -> Matrix
-(.+) =
-    add
