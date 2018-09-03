@@ -105,10 +105,10 @@ fromArray ( rows, columns ) elements =
     else
         let
             dimensions =
-                Debug.toString (rows * columns)
+                String.fromInt (rows * columns)
 
             numelements =
-                Debug.toString <| Array.length elements
+                String.fromInt <| Array.length elements
         in
         Err <| "The dimensions, row * columns: " ++ dimensions ++ ", do not match the number of elements: " ++ numelements
 
@@ -369,10 +369,10 @@ mulList a_ b_ =
     if numColumns a_ /= numRows b_ then
         let
             acolumns =
-                Debug.toString <| numColumns a_
+                String.fromInt <| numColumns a_
 
             brows =
-                Debug.toString <| numRows b_
+                String.fromInt <| numRows b_
         in
         Err <| "Dimension mismatch in a*b: a.columns = " ++ acolumns ++ " b.rows = " ++ brows ++ "."
 
@@ -1135,9 +1135,9 @@ vcatBase a_ b_ =
     else
         Err <|
             "Number of columns are not equal: a: "
-                ++ Debug.toString acols
+                ++ String.fromInt acols
                 ++ " b: "
-                ++ Debug.toString bcols
+                ++ String.fromInt bcols
 
 
 {-| Concatenate two matrices horizontally.
@@ -1163,9 +1163,9 @@ hcatBase a b =
     else
         Err <|
             "Number of rows are not equal: a: "
-                ++ Debug.toString arows
+                ++ String.fromInt arows
                 ++ " b: "
-                ++ Debug.toString brows
+                ++ String.fromInt brows
 
 
 {-| Returns matrix as flat list
@@ -1265,10 +1265,10 @@ dimToString : Matnxn -> String
 dimToString a =
     let
         arows =
-            Debug.toString <| numRows a
+            String.fromInt <| numRows a
 
         acols =
-            Debug.toString <| numColumns a
+            String.fromInt <| numColumns a
     in
     "(" ++ arows ++ "," ++ acols ++ ")"
 
@@ -1296,7 +1296,7 @@ toStringBasic a =
         strings =
             a.elements
                 |> Array.toList
-                |> List.map Debug.toString
+                |> List.map String.fromFloat
                 |> List.map ((++) " ")
 
         structured_strings =
@@ -1355,13 +1355,16 @@ getColumns a =
 debugPrint : Matrix -> String
 debugPrint a =
     let
+        dimensions = size a
+        num_rows = String.fromInt <| Tuple.first dimensions
+        num_cols = String.fromInt <| Tuple.second dimensions
         description_string =
-            Debug.toString (size a) ++ " Matrix\n"
+            "(" ++ num_rows ++ "," ++ num_cols ++ ")" ++ " Matrix\n"
 
         final_string =
             description_string ++ toString a ++ "\n"
     in
-    Debug.log final_string ""
+    final_string
 
 
 {-| Get the number of rows in a matrix
