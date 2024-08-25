@@ -1,6 +1,6 @@
 module Matrix exposing
     ( Matrix
-    , fromList, from2DList, mat, fromString, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper
+    , fromList, from2DList, mat, fromString, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper, initialize
     , cvecFromList, rvecFromList, cvec, rvec, vec
     , cross, dot
     , add, equivalent, sMul, sDiv, map, map2, eMul
@@ -28,7 +28,7 @@ transposes, multiplication, and inversion.
 
 # Creating Matrices
 
-@docs fromList, from2DList, mat, fromString, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper
+@docs fromList, from2DList, mat, fromString, mats, zeroes, ones, eye, upper, lower, strictLower, strictUpper, initialize
 
 
 # Creating Vectors
@@ -288,9 +288,14 @@ eye diagonal =
             else
                 0
     in
+    initialize ( diagonal, diagonal ) gen
+
+
+initialize : ( Int, Int ) -> (Int -> Float) -> Matrix
+initialize ( rows, cols ) gen =
     Mat
-        { dimensions = ( diagonal, diagonal )
-        , elements = Array.initialize (diagonal * diagonal) gen
+        { dimensions = ( rows, cols )
+        , elements = Array.initialize (rows * cols) gen
         }
 
 
