@@ -558,14 +558,6 @@ luComputeElem ( i, j ) original lu =
         set ( i, j ) (aij - (List.sum <| List.map compute k)) lu
 
 
-getScaling : List (List Float) -> List Float
-getScaling m =
-    List.map (\x -> List.map abs x) m
-        |> List.map List.maximum
-        |> List.map (Maybe.withDefault 0)
-        |> List.map (\x -> 1 / x)
-
-
 {-| Get an item at index (row, column). Indices are 1-indexed.
 
     a =
@@ -711,7 +703,121 @@ sDiv a b =
 -}
 invert : Matrix -> Result String Matrix
 invert a =
-    solve a (eye (numRows a))
+    let
+        n : Int
+        n =
+            numRows a
+
+        go : Int -> List (List Float) -> Result String Matrix
+        go i acc =
+            if i >= n then
+                from2DList (List.map (List.drop n) acc)
+
+            else
+                case findPivot i acc of
+                    Nothing ->
+                        Err "Matrix is singular"
+
+                    Just ( j, pivot, _ ) ->
+                        let
+                            swapped : List (List Float)
+                            swapped =
+                                List.Extra.swapAt i j acc
+
+                            scaled : List (List Float)
+                            scaled =
+                                List.Extra.updateAt
+                                    i
+                                    (List.map (\v -> v / pivot))
+                                    swapped
+
+                            scaledRow : List Float
+                            scaledRow =
+                                scaled
+                                    |> List.drop i
+                                    |> List.head
+                                    |> Maybe.withDefault []
+
+                            reduced : List (List Float)
+                            reduced =
+                                scaled
+                                    |> List.indexedMap
+                                        (\r row ->
+                                            if r == i then
+                                                row
+
+                                            else
+                                                let
+                                                    l : Float
+                                                    l =
+                                                        row
+                                                            |> List.drop i
+                                                            |> List.head
+                                                            |> Maybe.withDefault 1
+                                                in
+                                                List.map2 (\v s -> v - s * l) row scaledRow
+                                        )
+                        in
+                        go (i + 1) reduced
+    in
+    if numColumns a /= n then
+        Err "Could not invert matrix, it's not a square"
+
+    else
+        go 0 (List.map2 (++) (to2DList a) (to2DList (eye n)))
+
+
+findPivot : Int -> List (List Float) -> Maybe ( Int, Float, Float )
+findPivot i m =
+    let
+        go j queue best =
+            case queue of
+                [] ->
+                    best
+
+                head :: tail ->
+                    let
+                        next : Maybe ( Int, Float, Float )
+                        next =
+                            case List.Extra.maximumBy abs head of
+                                Nothing ->
+                                    best
+
+                                Just big ->
+                                    case List.Extra.getAt i head of
+                                        Nothing ->
+                                            best
+
+                                        Just pivot ->
+                                            if pivot == 0 then
+                                                best
+
+                                            else
+                                                let
+                                                    score : Float
+                                                    score =
+                                                        abs pivot / abs big
+
+                                                    candidate : ( Int, Float, Float )
+                                                    candidate =
+                                                        ( j, pivot, score )
+                                                in
+                                                case best of
+                                                    Nothing ->
+                                                        Just candidate
+
+                                                    Just ( _, _, previousScore ) ->
+                                                        if score > previousScore then
+                                                            Just candidate
+
+                                                        else
+                                                            best
+                    in
+                    go (j + 1)
+                        tail
+                        next
+    in
+    go i (List.drop i m) Nothing
 
 
 {-| Shorthand for invert.
