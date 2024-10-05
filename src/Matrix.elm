@@ -279,23 +279,21 @@ zeroes ( rows, columns ) =
 -}
 eye : Int -> Matrix
 eye diagonal =
-    let
-        gen : Int -> Float
-        gen x =
-            if modBy (diagonal + 1) x == 0 then
+    initialize ( diagonal, diagonal )
+        (\r c ->
+            if r == c then
                 1
 
             else
                 0
-    in
-    initialize ( diagonal, diagonal ) gen
+        )
 
 
-initialize : ( Int, Int ) -> (Int -> Float) -> Matrix
+initialize : ( Int, Int ) -> (Int -> Int -> Float) -> Matrix
 initialize ( rows, cols ) gen =
     Mat
         { dimensions = ( rows, cols )
-        , elements = Array.initialize (rows * cols) gen
+        , elements = Array.initialize (rows * cols) (\i -> gen (i // cols) (modBy cols i))
         }
 
 
