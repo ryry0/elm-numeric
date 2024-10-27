@@ -45,4 +45,3 @@ suite =
                         , "25.97    "
                         ]
         ]
-        |> Test.only
