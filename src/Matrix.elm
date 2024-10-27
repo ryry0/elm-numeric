@@ -5,7 +5,7 @@ module Matrix exposing
     , cross, dot
     , add, equivalent, sMul, sDiv, map, map2, eMul
     , mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
-    , toString, debugPrint
+    , toString, toAlignedString, debugPrint
     , to2DList, toFlatList
     )
 
@@ -53,7 +53,7 @@ transposes, multiplication, and inversion.
 
 # Matrix Display
 
-@docs toString, debugPrint
+@docs toString, toAlignedString, debugPrint
 
 
 # Interop
@@ -65,6 +65,7 @@ transposes, multiplication, and inversion.
 import Array exposing (Array)
 import Array.Extra
 import List.Extra
+import Matrix.Format
 
 
 type alias Matnxn =
@@ -1346,6 +1347,31 @@ toString a =
                     |> List.map String.fromFloat
                     |> String.join " "
             )
+        |> String.join "\n"
+
+
+{-| Change matrix into string form, such as what would be displayed in the terminal.
+
+This version aligns the columns.
+
+    Matrix.toString (Matrix.sMul 100 (Matrix.eye 3)) ==
+
+"""
+100 0 0
+0 100 0
+0 0 100
+"""
+
+-}
+toAlignedString : Matrix -> String
+toAlignedString a =
+    a
+        |> to2DList
+        |> List.map (\row -> List.map String.fromFloat row)
+        |> List.Extra.transpose
+        |> List.map Matrix.Format.alignColumn
+        |> List.Extra.transpose
+        |> List.map (String.join " ")
         |> String.join "\n"
 
 
