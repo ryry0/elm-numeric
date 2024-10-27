@@ -3,6 +3,7 @@ module TestInverse exposing (fuzzed, simple)
 import Expect
 import Fuzz exposing (Fuzzer)
 import Matrix exposing (Matrix)
+import Matrix.Format
 import Test exposing (Test, describe, fuzz, test)
 
 
@@ -88,12 +89,9 @@ canInvert m =
                         let
                             toIndentedString : Matrix -> String
                             toIndentedString matrix =
-                                "  "
-                                    ++ (matrix
-                                            |> Matrix.toAlignedString
-                                            |> String.split "\n"
-                                            |> String.join "\n  "
-                                       )
+                                matrix
+                                    |> Matrix.toAlignedString
+                                    |> Matrix.Format.indent "  "
 
                             message : List String
                             message =
