@@ -1224,8 +1224,10 @@ cross a b =
 equivalent : Float -> Matrix -> Matrix -> Bool
 equivalent epsilon (Mat a) (Mat b) =
     (a.dimensions == b.dimensions)
-        && (Array.Extra.map2 (-) a.elements b.elements
-                |> Array.map (\x -> abs x < epsilon)
+        && (Array.Extra.map2
+                (\ae be -> abs (ae - be) < epsilon)
+                a.elements
+                b.elements
                 |> Array.toList
                 |> List.all ((==) True)
            )
