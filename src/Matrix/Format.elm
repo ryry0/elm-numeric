@@ -1,4 +1,4 @@
-module Matrix.Format exposing (alignColumn)
+module Matrix.Format exposing (alignColumn, indent)
 
 
 alignColumn : List String -> List String
@@ -34,16 +34,31 @@ alignColumn floats =
 
             else
                 let
-                    dotted =
+                    ( whole, decimal ) =
                         case split of
-                            [ _ ] ->
-                                f ++ "."
+                            [ i, d ] ->
+                                ( i, d )
 
                             _ ->
-                                f
+                                ( f, "" )
+
+                    leftPadded =
+                        (whole
+                            |> String.padLeft beforeDotLength ' '
+                        )
+                            ++ "."
+                            ++ decimal
                 in
-                dotted
-                    |> String.padLeft (beforeDotLength + 1) ' '
+                leftPadded
                     |> String.padRight (beforeDotLength + afterDotLength + 1) ' '
     in
     List.map alignFloat splat
+
+
+indent : String -> String -> String
+indent prefix str =
+    prefix
+        ++ (str
+                |> String.split "\n"
+                |> String.join ("\n" ++ prefix)
+           )
