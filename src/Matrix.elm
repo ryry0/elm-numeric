@@ -460,6 +460,19 @@ luDecomp a =
     let
         n =
             numRows a
+
+        logMatrix : String -> List (List Float) -> ()
+        logMatrix label m =
+            Debug.log
+                (label
+                    ++ ":\n"
+                    ++ toAlignedString
+                        (Result.withDefault
+                            (eye 0)
+                            (from2DList m)
+                        )
+                )
+                ()
     in
     if n /= numColumns a then
         Err "Must be a square matrix"
@@ -473,6 +486,16 @@ luDecomp a =
             -- prevL gets build column-by-column, in inverse order
             go i prevP prevL prevU =
                 if i == n then
+                    let
+                        _ =
+                            logMatrix "lastP" prevP
+
+                        _ =
+                            logMatrix "lastL" (List.Extra.transpose (List.reverse prevL))
+
+                        _ =
+                            logMatrix "lastU" prevU
+                    in
                     Result.map3
                         (\p l u ->
                             { p = p
@@ -485,12 +508,21 @@ luDecomp a =
                         (from2DList prevU)
 
                 else
-                    case findPivot epsilon n prevU of
+                    case findPivot epsilon i prevU of
                         Nothing ->
-                            Err "Matrix is singular"
+                            Err "Matrix is singular - could not find pivot"
 
                         Just ( index, pivot, _ ) ->
                             let
+                                _ =
+                                    logMatrix "prevP" prevP
+
+                                _ =
+                                    logMatrix "prevL" (List.Extra.transpose (List.reverse prevL))
+
+                                _ =
+                                    logMatrix "prevU" prevU
+
                                 swappedU =
                                     List.Extra.swapAt index n prevU
 
