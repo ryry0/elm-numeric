@@ -459,6 +459,7 @@ Given `A` returns `P`, `L`, `U` such that:
 luDecomp : Matrix -> { p : Matrix, l : Matrix, u : Matrix }
 luDecomp a =
     let
+        n : Int
         n =
             numRows a
 
@@ -468,24 +469,29 @@ luDecomp a =
                 ("\n"
                     ++ label
                     ++ ":\n"
-                    ++ toFractionString (from2DListUnsafe m)
+                    ++ toAlignedString (from2DListUnsafe m)
                 )
                 ()
 
+        epsilon : Float
         epsilon =
             10 ^ -14
 
+        from2DListUnsafe : List (List Float) -> Matrix
         from2DListUnsafe list =
             list
                 |> from2DList
                 |> Result.withDefault (eye 0)
 
+        mulUnsafe : Matrix -> Matrix -> Matrix
         mulUnsafe x y =
             mul x y
                 |> Result.withDefault (eye 0)
 
-        -- prevP and prevU are full matrices
-        -- prevL gets build column-by-column, in inverse order
+        eyeN : List (List Float)
+        eyeN =
+            to2DList (eye n)
+
         go i prevP prevL prevU =
             let
                 _ =
@@ -493,20 +499,17 @@ luDecomp a =
             in
             if i == n then
                 let
-                    lastL =
-                        List.Extra.transpose (List.reverse prevL)
-
                     _ =
                         logMatrix "lastP" prevP
 
                     _ =
-                        logMatrix "lastL" lastL
+                        logMatrix "lastL" prevL
 
                     _ =
                         logMatrix "lastU" prevU
                 in
                 { p = from2DListUnsafe prevP
-                , l = from2DListUnsafe lastL
+                , l = from2DListUnsafe prevL
                 , u = from2DListUnsafe prevU
                 }
 
@@ -516,7 +519,7 @@ luDecomp a =
                         logMatrix "prevP" prevP
 
                     _ =
-                        logMatrix "prevL" (List.Extra.transpose (List.reverse prevL))
+                        logMatrix "prevL" prevL
 
                     _ =
                         logMatrix "prevU" prevU
@@ -546,63 +549,54 @@ luDecomp a =
                             _ =
                                 logMatrix "swappedP" swappedP
 
+                            swappedL =
+                                prevL
+                                    |> List.Extra.swapAt index i
+
                             u_i =
                                 List.Extra.getAt i swappedU
                                     |> Maybe.withDefault []
 
                             ( _, finalL, finalU ) =
                                 List.foldr
-                                    (\uRow ( j, accL, accU ) ->
+                                    (\( u_j, l_j ) ( j, accL, accU ) ->
                                         let
                                             ( nextL, nextU ) =
-                                                if j < i then
-                                                    ( 0, uRow )
-
-                                                else if j == i then
-                                                    ( 1, uRow )
+                                                if j <= i then
+                                                    ( l_j, u_j )
 
                                                 else
                                                     let
                                                         u_ji =
-                                                            List.Extra.getAt i uRow
+                                                            List.Extra.getAt i u_j
                                                                 |> Maybe.withDefault 0
 
                                                         l_ji =
                                                             u_ji / pivot
                                                     in
-                                                    ( l_ji
+                                                    ( List.Extra.setAt i l_ji l_j
                                                     , List.map2 (-)
-                                                        uRow
+                                                        u_j
                                                         (List.map ((*) l_ji) u_i)
                                                     )
                                         in
                                         ( j - 1, nextL :: accL, nextU :: accU )
                                     )
                                     ( n - 1, [], [] )
-                                    swappedU
-
-                            completeL =
-                                List.foldl
-                                    (\q acc ->
-                                        (List.repeat q 0 ++ 1 :: List.repeat (n - q - 1) 0) :: acc
-                                    )
-                                    (finalL :: prevL)
-                                    (List.range (i + 1) (n - 1))
-                                    |> List.reverse
-                                    |> List.Extra.transpose
+                                    (List.map2 Tuple.pair swappedU swappedL)
 
                             plu =
                                 to2DList
                                     (mulUnsafe
                                         (mulUnsafe
-                                            (from2DListUnsafe completeL)
-                                            (from2DListUnsafe swappedP)
+                                            (transpose <| from2DListUnsafe swappedP)
+                                            (from2DListUnsafe finalL)
                                         )
                                         (from2DListUnsafe finalU)
                                     )
                         in
-                        if equivalent epsilon (from2DListUnsafe plu) a || True then
-                            go (i + 1) swappedP (finalL :: prevL) finalU
+                        if equivalent epsilon (from2DListUnsafe plu) a {- || True -} then
+                            go (i + 1) swappedP finalL finalU
 
                         else
                             let
@@ -610,7 +604,7 @@ luDecomp a =
                                     logMatrix "finalU" finalU
 
                                 _ =
-                                    logMatrix "completeL" completeL
+                                    logMatrix "finalL" finalL
 
                                 _ =
                                     logMatrix "wrong PLU" plu
@@ -619,11 +613,11 @@ luDecomp a =
                                     logMatrix "A" (to2DList a)
                             in
                             { p = from2DListUnsafe swappedP
-                            , l = from2DListUnsafe completeL
+                            , l = from2DListUnsafe finalL
                             , u = from2DListUnsafe finalU
                             }
     in
-    go 0 (to2DList (eye n)) [] (to2DList a)
+    go 0 eyeN eyeN (to2DList a)
 
 
 {-| Performs lu factorization
