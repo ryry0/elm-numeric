@@ -555,7 +555,7 @@ luDecomp a =
 
                             ( _, finalL, finalU ) =
                                 List.foldr
-                                    (\( u_j, l_j ) ( j, accL, accU ) ->
+                                    (\( l_j, u_j ) ( j, accL, accU ) ->
                                         let
                                             ( nextL, nextU ) =
                                                 if j <= i then
@@ -579,7 +579,7 @@ luDecomp a =
                                         ( j - 1, nextL :: accL, nextU :: accU )
                                     )
                                     ( rows - 1, [], [] )
-                                    (List.map2 Tuple.pair swappedU prevL)
+                                    (List.map2 Tuple.pair prevL swappedU)
 
                             plu =
                                 to2DList
