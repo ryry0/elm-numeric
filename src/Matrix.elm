@@ -459,9 +459,13 @@ Given `A` returns `P`, `L`, `U` such that:
 luDecomp : Matrix -> { p : Matrix, l : Matrix, u : Matrix }
 luDecomp a =
     let
-        n : Int
-        n =
+        rows : Int
+        rows =
             numRows a
+
+        cols : Int
+        cols =
+            numColumns a
 
         logMatrix : String -> List (List Float) -> ()
         logMatrix label m =
@@ -488,16 +492,12 @@ luDecomp a =
             mul x y
                 |> Result.withDefault (eye 0)
 
-        eyeN : List (List Float)
-        eyeN =
-            to2DList (eye n)
-
         go i prevP prevL prevU =
             let
                 _ =
                     Debug.log "\n------------------ i" i
             in
-            if i == n then
+            if i == min rows cols then
                 let
                     _ =
                         logMatrix "lastP" prevP
@@ -526,11 +526,7 @@ luDecomp a =
                 in
                 case findPivot epsilon i prevU of
                     Nothing ->
-                        let
-                            nextL =
-                                List.repeat i 0 ++ 1 :: List.repeat (n - i - 1) 0
-                        in
-                        go (i + 1) prevP (nextL :: prevL) prevU
+                        go (i + 1) prevP prevL prevU
 
                     Just ( index, pivot ) ->
                         let
@@ -544,14 +540,14 @@ luDecomp a =
                                 logMatrix "swappedU" swappedU
 
                             swappedP =
-                                List.Extra.swapAt index i prevP
+                                prevP
+                                    |> List.Extra.swapAt index i
+
+                            finalP =
+                                swappedP
 
                             _ =
                                 logMatrix "swappedP" swappedP
-
-                            swappedL =
-                                prevL
-                                    |> List.Extra.swapAt index i
 
                             u_i =
                                 List.Extra.getAt i swappedU
@@ -582,24 +578,27 @@ luDecomp a =
                                         in
                                         ( j - 1, nextL :: accL, nextU :: accU )
                                     )
-                                    ( n - 1, [], [] )
-                                    (List.map2 Tuple.pair swappedU swappedL)
+                                    ( rows - 1, [], [] )
+                                    (List.map2 Tuple.pair swappedU prevL)
 
                             plu =
                                 to2DList
                                     (mulUnsafe
                                         (mulUnsafe
-                                            (transpose <| from2DListUnsafe swappedP)
+                                            (from2DListUnsafe finalP)
                                             (from2DListUnsafe finalL)
                                         )
                                         (from2DListUnsafe finalU)
                                     )
                         in
                         if equivalent epsilon (from2DListUnsafe plu) a {- || True -} then
-                            go (i + 1) swappedP finalL finalU
+                            go (i + 1) finalP finalL finalU
 
                         else
                             let
+                                _ =
+                                    logMatrix "finalP" finalP
+
                                 _ =
                                     logMatrix "finalU" finalU
 
@@ -612,10 +611,14 @@ luDecomp a =
                                 _ =
                                     logMatrix "A" (to2DList a)
                             in
-                            { p = from2DListUnsafe swappedP
+                            { p = from2DListUnsafe finalP
                             , l = from2DListUnsafe finalL
                             , u = from2DListUnsafe finalU
                             }
+
+        eyeN : List (List Float)
+        eyeN =
+            to2DList (eye rows)
     in
     go 0 eyeN eyeN (to2DList a)
 

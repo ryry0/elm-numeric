@@ -92,7 +92,7 @@ checkPLU a =
         , \_ -> checkIsUpper u
         , \_ ->
             case
-                Matrix.mul (Matrix.transpose p) l
+                Matrix.mul p l
                     |> Result.andThen (\pl -> Matrix.mul pl u)
             of
                 Err msg ->
@@ -181,4 +181,4 @@ checkIsUpper mat =
             )
         |> List.all identity
         |> Expect.equal True
-        |> Expect.onFail ("Not a lower triangular:\n" ++ Matrix.toAlignedString mat)
+        |> Expect.onFail ("Not an upper triangular:\n" ++ Matrix.toAlignedString mat)
