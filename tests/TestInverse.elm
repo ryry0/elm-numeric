@@ -1,7 +1,7 @@
 module TestInverse exposing (fuzzed, simple)
 
 import Expect
-import Fuzz exposing (Fuzzer)
+import Fuzzers
 import Matrix exposing (Matrix)
 import Matrix.Format
 import Test exposing (Test, describe, fuzz, test)
@@ -64,7 +64,7 @@ force res =
 
 fuzzed : Test
 fuzzed =
-    fuzz squareMatrixFuzzer
+    fuzz Fuzzers.squareMatrix
         "Invert fuzzed matrix"
         canInvert
 
@@ -111,24 +111,3 @@ canInvert m =
 
         Err e ->
             Expect.fail e
-
-
-squareMatrixFuzzer : Fuzzer Matrix
-squareMatrixFuzzer =
-    let
-        bound : Float
-        bound =
-            10 ^ 4
-    in
-    Fuzz.intRange 1 5
-        |> Fuzz.andThen
-            (\n ->
-                Fuzz.floatRange -bound bound
-                    |> Fuzz.map (\f -> (f * 100 |> round |> toFloat) / 100)
-                    |> Fuzz.listOfLength (n * n)
-                    |> Fuzz.filterMap
-                        (\items ->
-                            Matrix.fromList ( n, n ) items
-                                |> Result.toMaybe
-                        )
-            )
