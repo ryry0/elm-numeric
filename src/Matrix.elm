@@ -455,7 +455,7 @@ Given `A` returns `P`, `L`, `U` such that:
   - `U` is upper triangular.
 
 -}
-luDecomp : Matrix -> Result String { p : Matrix, l : Matrix, u : Matrix }
+luDecomp : Matrix -> { p : Matrix, l : Matrix, u : Matrix }
 luDecomp a =
     let
         n =
@@ -464,7 +464,8 @@ luDecomp a =
         logMatrix : String -> List (List Float) -> ()
         logMatrix label m =
             Debug.log
-                (label
+                ("\n"
+                    ++ label
                     ++ ":\n"
                     ++ toAlignedString
                         (Result.withDefault
@@ -473,100 +474,112 @@ luDecomp a =
                         )
                 )
                 ()
+
+        epsilon =
+            10 ^ -14
+
+        -- prevP and prevU are full matrices
+        -- prevL gets build column-by-column, in inverse order
+        go i prevP prevL prevU =
+            let
+                _ =
+                    Debug.log "\n------------------ i" i
+            in
+            if i == n then
+                let
+                    _ =
+                        logMatrix "lastP" prevP
+
+                    _ =
+                        logMatrix "lastL" (List.Extra.transpose (List.reverse prevL))
+
+                    _ =
+                        logMatrix "lastU" prevU
+
+                    from list =
+                        list
+                            |> from2DList
+                            |> Result.withDefault (eye 0)
+                in
+                { p = from prevP
+                , l = from (List.Extra.transpose (List.reverse prevL))
+                , u = from prevU
+                }
+
+            else
+                let
+                    _ =
+                        logMatrix "prevP" prevP
+
+                    _ =
+                        logMatrix "prevL" (List.Extra.transpose (List.reverse prevL))
+
+                    _ =
+                        logMatrix "prevU" prevU
+                in
+                case findPivot epsilon i prevU of
+                    Nothing ->
+                        let
+                            nextL =
+                                List.repeat i 0 ++ 1 :: List.repeat (n - i - 1) 0
+                        in
+                        go (i + 1) prevP (nextL :: prevL) prevU
+
+                    Just ( index, pivot ) ->
+                        let
+                            _ =
+                                Debug.log "\nindex" index
+
+                            swappedU =
+                                List.Extra.swapAt index i prevU
+
+                            _ =
+                                logMatrix "swappedU" swappedU
+
+                            swappedP =
+                                List.Extra.swapAt index i prevP
+
+                            _ =
+                                logMatrix "swappedP" swappedP
+
+                            u_i =
+                                List.Extra.getAt i swappedU
+                                    |> Maybe.withDefault []
+
+                            ( _, finalL, finalU ) =
+                                List.foldr
+                                    (\uRow ( j, accL, accU ) ->
+                                        let
+                                            ( nextL, nextU ) =
+                                                if j < i then
+                                                    ( 0, uRow )
+
+                                                else if j == i then
+                                                    ( 1, uRow )
+
+                                                else
+                                                    let
+                                                        u_ji =
+                                                            List.Extra.getAt i uRow
+                                                                |> Maybe.withDefault 0
+
+                                                        l_ji =
+                                                            u_ji / pivot
+                                                    in
+                                                    ( l_ji
+                                                    , List.map2 (-)
+                                                        uRow
+                                                        (List.map ((*) l_ji) u_i)
+                                                    )
+                                        in
+                                        ( j - 1, nextL :: accL, nextU :: accU )
+                                    )
+                                    ( n - 1, [], [] )
+                                    swappedU
+                        in
+                        go (i + 1) swappedP (finalL :: prevL) finalU
     in
-    if n /= numColumns a then
-        Err "Must be a square matrix"
-
-    else
-        let
-            epsilon =
-                10 ^ -14
-
-            -- prevP and prevU are full matrices
-            -- prevL gets build column-by-column, in inverse order
-            go i prevP prevL prevU =
-                if i == n then
-                    let
-                        _ =
-                            logMatrix "lastP" prevP
-
-                        _ =
-                            logMatrix "lastL" (List.Extra.transpose (List.reverse prevL))
-
-                        _ =
-                            logMatrix "lastU" prevU
-                    in
-                    Result.map3
-                        (\p l u ->
-                            { p = p
-                            , l = l
-                            , u = u
-                            }
-                        )
-                        (from2DList prevP)
-                        (from2DList (List.Extra.transpose (List.reverse prevL)))
-                        (from2DList prevU)
-
-                else
-                    case findPivot epsilon i prevU of
-                        Nothing ->
-                            Err "Matrix is singular - could not find pivot"
-
-                        Just ( index, pivot, _ ) ->
-                            let
-                                _ =
-                                    logMatrix "prevP" prevP
-
-                                _ =
-                                    logMatrix "prevL" (List.Extra.transpose (List.reverse prevL))
-
-                                _ =
-                                    logMatrix "prevU" prevU
-
-                                swappedU =
-                                    List.Extra.swapAt index n prevU
-
-                                swappedP =
-                                    List.Extra.swapAt index n prevP
-
-                                u_i =
-                                    List.Extra.getAt i swappedU
-                                        |> Maybe.withDefault []
-
-                                ( _, finalL, finalU ) =
-                                    List.foldr
-                                        (\uRow ( j, accL, accU ) ->
-                                            let
-                                                ( nextL, nextU ) =
-                                                    if j < i then
-                                                        ( 0, uRow )
-
-                                                    else if j == i then
-                                                        ( 1, uRow )
-
-                                                    else
-                                                        let
-                                                            u_ji =
-                                                                List.Extra.getAt i uRow
-                                                                    |> Maybe.withDefault 0
-
-                                                            l_ji =
-                                                                u_ji / pivot
-                                                        in
-                                                        ( l_ji
-                                                        , List.map2 (-)
-                                                            uRow
-                                                            (List.map ((*) l_ji) u_i)
-                                                        )
-                                            in
-                                            ( j - 1, nextL :: accL, nextU :: accU )
-                                        )
-                                        ( n - 1, [], [] )
-                                        swappedU
-                            in
-                            go (i + 1) swappedP (finalL :: prevL) finalU
-        in
-        go 0 (to2DList (eye n)) [] (to2DList a)
+    go 0 (to2DList (eye n)) [] (to2DList a)
 
 
 {-| Performs lu factorization
@@ -810,7 +823,7 @@ invert a =
                     Nothing ->
                         Err "Matrix is singular"
 
-                    Just ( j, pivot, _ ) ->
+                    Just ( j, pivot ) ->
                         let
                             swapped : List (List Float)
                             swapped =
@@ -859,46 +872,41 @@ invert a =
         go 0 (List.map2 (++) (to2DList a) (to2DList (eye n)))
 
 
-findPivot : Float -> Int -> List (List Float) -> Maybe ( Int, Float, Float )
+findPivot : Float -> Int -> List (List Float) -> Maybe ( Int, Float )
 findPivot epsilon i m =
     let
         go j queue best =
             case queue of
                 [] ->
-                    best
+                    Maybe.map (\( index, pivot, _ ) -> ( index, pivot )) best
 
                 head :: tail ->
                     let
                         next : Maybe ( Int, Float, Float )
                         next =
-                            head
-                                |> List.Extra.maximumBy abs
+                            List.Extra.getAt i head
+                                |> Maybe.Extra.filter (\pivot -> abs pivot > epsilon)
                                 |> Maybe.andThen
-                                    (\big ->
-                                        List.Extra.getAt i head
-                                            |> Maybe.Extra.filter (\pivot -> abs pivot > epsilon)
-                                            |> Maybe.andThen
-                                                (\pivot ->
-                                                    let
-                                                        score : Float
-                                                        score =
-                                                            abs pivot / abs big
+                                    (\pivot ->
+                                        let
+                                            score : Float
+                                            score =
+                                                abs pivot
 
-                                                        candidate : ( Int, Float, Float )
-                                                        candidate =
-                                                            ( j, pivot, score )
-                                                    in
-                                                    case best of
-                                                        Nothing ->
-                                                            Just candidate
+                                            candidate : ( Int, Float, Float )
+                                            candidate =
+                                                ( j, pivot, score )
+                                        in
+                                        case best of
+                                            Nothing ->
+                                                Just candidate
 
-                                                        Just ( _, _, previousScore ) ->
-                                                            if score > previousScore then
-                                                                Just candidate
+                                            Just ( _, _, previousScore ) ->
+                                                if score > previousScore then
+                                                    Just candidate
 
-                                                            else
-                                                                best
-                                                )
+                                                else
+                                                    best
                                     )
                     in
                     go (j + 1) tail (next |> Maybe.Extra.orElse best)

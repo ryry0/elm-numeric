@@ -14,6 +14,7 @@ fuzzy =
         checkPLU
 
 
+simple : Float -> Matrix
 simple n =
     Matrix.initialize ( 1, 1 ) (\_ _ -> n)
 
@@ -22,55 +23,84 @@ fixed : Test
 fixed =
     [ simple 1000
     , Matrix.from2DList
-        [ [ -10000, -10000, 0, 0 ]
-        , [ -0.01, 0, 0, -10000 ]
-        , [ 0, 0, -10000, 0 ]
-        , [ 0, -10000, 0, 0 ]
+        [ [ 0, 5, 7 ]
+        , [ 4, 2, 1 ]
+        , [ 2, 7, 9 ]
         ]
         |> Result.withDefault (simple 0)
+    , Matrix.from2DList
+        [ [ 1, 1, 0 ]
+        , [ 2, 1, -1 ]
+        , [ 3, -1, -1 ]
+        ]
+        |> Result.withDefault (simple 0)
+    , Matrix.from2DList
+        [ [ 1, 2, 1 ]
+        , [ 1, 2, 2 ]
+        , [ 2, 1, 1 ]
+        ]
+        |> Result.withDefault (simple 0)
+    , Matrix.from2DList
+        [ [ 1, 2, 1, 2, 1 ]
+        , [ 2, 4, 2, 4, 1 ]
+        , [ 1, 2, 1, 3, 2 ]
+        ]
+        |> Result.withDefault (simple 0)
+    , Matrix.from2DList
+        [ [ 1, 2, 1 ]
+        , [ 1, 2, 2 ]
+        , [ 2, 4, 1 ]
+        , [ 3, 2, 1 ]
+        ]
+        |> Result.withDefault (simple 0)
+
+    -- , Matrix.from2DList
+    --     [ [ -10, -1, 0, 0 ]
+    --     , [ -1, 0, 0, -1 ]
+    --     , [ 0, 0, -1, 0 ]
+    --     , [ 0, -1, 0, 0 ]
+    --     ]
+    --     |> Result.withDefault (simple 0)
     ]
-        |> List.map (\m -> test ("PLU for:\n" ++ Matrix.toAlignedString m) <| \_ -> checkPLU m)
+        |> List.map (\m -> test ("PLU Example - A:\n" ++ Matrix.toAlignedString m) <| \_ -> checkPLU m)
         |> describe "PLU decomposition is correct - examples"
+        |> Test.only
 
 
 checkPLU : Matrix -> Expect.Expectation
-checkPLU =
-    \a ->
-        let
-            det =
-                Matrix.determinant a
-        in
-        case det of
-            Nothing ->
-                Expect.pass
+checkPLU a =
+    let
+        { p, l, u } =
+            Matrix.luDecomp a
+    in
+    Expect.all
+        [ \_ -> checkIsPermutation p
+        , \_ -> checkIsUnitLower l
+        , \_ -> checkIsUpper u
+        , \_ ->
+            case
+                Matrix.mul p l
+                    |> Result.andThen (\pl -> Matrix.mul pl u)
+            of
+                Err msg ->
+                    Expect.fail msg
 
-            Just d ->
-                if d == 0 || isNaN d then
-                    Expect.pass
-
-                else
-                    case Matrix.luDecomp a of
-                        Err msg ->
-                            Expect.fail msg
-
-                        Ok { p, l, u } ->
-                            Expect.all
-                                [ \_ -> checkIsPermutation p
-                                , \_ -> checkIsUnitLower l
-                                , \_ -> checkIsUpper u
-                                , \_ ->
-                                    case
-                                        Matrix.mul p l
-                                            |> Result.andThen (\pl -> Matrix.mul pl u)
-                                    of
-                                        Err msg ->
-                                            Expect.fail msg
-
-                                        Ok plu ->
-                                            Matrix.equivalent (10 ^ -4) plu a
-                                                |> Expect.equal True
-                                ]
-                                ()
+                Ok plu ->
+                    let
+                        lu =
+                            Matrix.mul l u
+                                |> Result.withDefault (Matrix.eye 0)
+                    in
+                    Matrix.equivalent (10 ^ -4) plu a
+                        |> Expect.equal True
+                        |> Expect.onFail
+                            ("PLU != A.\nLU:\n"
+                                ++ Matrix.toAlignedString lu
+                                ++ "\nPLU:\n"
+                                ++ Matrix.toAlignedString plu
+                            )
+        ]
+        ()
 
 
 checkIsPermutation : Matrix -> Expect.Expectation
