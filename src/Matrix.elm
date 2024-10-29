@@ -66,6 +66,7 @@ import Array exposing (Array)
 import Array.Extra
 import List.Extra
 import Matrix.Format
+import Maybe.Extra
 
 
 type alias Matnxn =
@@ -444,41 +445,96 @@ mul a b =
         from2DList <| constructList a_list b_list
 
 
-{-| Get the lu decomposition of a matrix
-Since pivoting isn't implemented, watch out for numerical instability
--}
-luDecomp : Matrix -> Result String ( Matrix, Matrix )
-luDecomp a =
-    if numRows a == numColumns a then
-        luSplit a
+{-| Get the PLU (LU with pivoting) decomposition of a matrix.
 
-    else
+Given `A` returns `P`, `L`, `U` such that:
+
+  - `A = P L U`,
+  - `P` is a permutation matrix,
+  - `L` is lower triangular with ones on the diagonal and
+  - `U` is upper triangular.
+
+-}
+luDecomp : Matrix -> Result String { p : Matrix, l : Matrix, u : Matrix }
+luDecomp a =
+    let
+        n =
+            numRows a
+    in
+    if n /= numColumns a then
         Err "Must be a square matrix"
 
+    else
+        let
+            epsilon =
+                10 ^ -14
 
-{-| Splits the lu factorized single matrix into two
--}
-luSplit : Matrix -> Result String ( Matrix, Matrix )
-luSplit a =
-    let
-        single : Matrix
-        single =
-            luNoPivotSingle a
+            -- prevP and prevU are full matrices
+            -- prevL gets build column-by-column, in inverse order
+            go i prevP prevL prevU =
+                if i == n then
+                    Result.map3
+                        (\p l u ->
+                            { p = p
+                            , l = l
+                            , u = u
+                            }
+                        )
+                        (from2DList prevP)
+                        (from2DList (List.Extra.transpose (List.reverse prevL)))
+                        (from2DList prevU)
 
-        dim : Int
-        dim =
-            numColumns a
+                else
+                    case findPivot epsilon n prevU of
+                        Nothing ->
+                            Err "Matrix is singular"
 
-        l : Result String Matrix
-        l =
-            eMul single (strictLower dim)
-                |> Result.andThen (add (eye dim))
+                        Just ( index, pivot, _ ) ->
+                            let
+                                swappedU =
+                                    List.Extra.swapAt index n prevU
 
-        u : Result String Matrix
-        u =
-            eMul single (upper dim)
-    in
-    Result.map2 Tuple.pair l u
+                                swappedP =
+                                    List.Extra.swapAt index n prevP
+
+                                u_i =
+                                    List.Extra.getAt i swappedU
+                                        |> Maybe.withDefault []
+
+                                ( _, finalL, finalU ) =
+                                    List.foldr
+                                        (\uRow ( j, accL, accU ) ->
+                                            let
+                                                ( nextL, nextU ) =
+                                                    if j < i then
+                                                        ( 0, uRow )
+
+                                                    else if j == i then
+                                                        ( 1, uRow )
+
+                                                    else
+                                                        let
+                                                            u_ji =
+                                                                List.Extra.getAt i uRow
+                                                                    |> Maybe.withDefault 0
+
+                                                            l_ji =
+                                                                u_ji / pivot
+                                                        in
+                                                        ( l_ji
+                                                        , List.map2 (-)
+                                                            uRow
+                                                            (List.map ((*) l_ji) u_i)
+                                                        )
+                                            in
+                                            ( j - 1, nextL :: accL, nextU :: accU )
+                                        )
+                                        ( n - 1, [], [] )
+                                        swappedU
+                            in
+                            go (i + 1) swappedP (finalL :: prevL) finalU
+        in
+        go 0 (to2DList (eye n)) [] (to2DList a)
 
 
 {-| Performs lu factorization
@@ -705,6 +761,9 @@ sDiv a b =
 invert : Matrix -> Result String Matrix
 invert a =
     let
+        epsilon =
+            10 ^ -14
+
         n : Int
         n =
             numRows a
@@ -715,7 +774,7 @@ invert a =
                 from2DList (List.map (List.drop n) acc)
 
             else
-                case findPivot i acc of
+                case findPivot epsilon i acc of
                     Nothing ->
                         Err "Matrix is singular"
 
@@ -768,8 +827,8 @@ invert a =
         go 0 (List.map2 (++) (to2DList a) (to2DList (eye n)))
 
 
-findPivot : Int -> List (List Float) -> Maybe ( Int, Float, Float )
-findPivot i m =
+findPivot : Float -> Int -> List (List Float) -> Maybe ( Int, Float, Float )
+findPivot epsilon i m =
     let
         go j queue best =
             case queue of
@@ -785,7 +844,7 @@ findPivot i m =
                                 |> Maybe.andThen
                                     (\big ->
                                         List.Extra.getAt i head
-                                            |> Maybe.Extra.filter (\pivot -> pivot /= 0)
+                                            |> Maybe.Extra.filter (\pivot -> abs pivot > epsilon)
                                             |> Maybe.andThen
                                                 (\pivot ->
                                                     let
