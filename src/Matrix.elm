@@ -564,7 +564,6 @@ luDecomp a =
                                                     let
                                                         u_ji =
                                                             List.Extra.getAt i uRow
-                                                                |> Debug.log "\nu_ji"
                                                                 |> Maybe.withDefault 0
 
                                                         l_ji =
@@ -601,7 +600,7 @@ luDecomp a =
                                         (from2DListUnsafe finalU)
                                     )
                         in
-                        if equivalent epsilon (from2DListUnsafe plu) a then
+                        if equivalent epsilon (from2DListUnsafe plu) a || True then
                             go (i + 1) swappedP (finalL :: prevL) finalU
 
                         else
@@ -613,7 +612,10 @@ luDecomp a =
                                     logMatrix "completeL" completeL
 
                                 _ =
-                                    logMatrix "plu" plu
+                                    logMatrix "wrong PLU" plu
+
+                                _ =
+                                    logMatrix "A" (to2DList a)
                             in
                             { p = from2DListUnsafe swappedP
                             , l = from2DListUnsafe completeL

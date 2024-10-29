@@ -14,57 +14,59 @@ fuzzy =
         checkPLU
 
 
-simple : Float -> Matrix
-simple n =
-    Matrix.initialize ( 1, 1 ) (\_ _ -> n)
+test2DList : List (List Float) -> Test
+test2DList list =
+    let
+        m =
+            list
+                |> Matrix.from2DList
+                |> Result.withDefault (Matrix.eye 0)
+    in
+    test ("PLU Example - A:\n" ++ Matrix.toAlignedString m) <|
+        \_ -> checkPLU m
 
 
 fixed : Test
 fixed =
-    [ simple 1000
-    , Matrix.from2DList
-        [ [ 0, 5, 7 ]
-        , [ 4, 2, 1 ]
-        , [ 2, 7, 9 ]
-        ]
-        |> Result.withDefault (simple 0)
-    , Matrix.from2DList
-        [ [ 1, 1, 0 ]
-        , [ 2, 1, -1 ]
-        , [ 3, -1, -1 ]
-        ]
-        |> Result.withDefault (simple 0)
-    , Matrix.from2DList
-        [ [ 1, 2, 1 ]
-        , [ 1, 2, 2 ]
-        , [ 2, 1, 1 ]
-        ]
-        |> Result.withDefault (simple 0)
-    , Matrix.from2DList
-        [ [ 1, 2, 1, 2, 1 ]
-        , [ 2, 4, 2, 4, 1 ]
-        , [ 1, 2, 1, 3, 2 ]
-        ]
-        |> Result.withDefault (simple 0)
+    describe "PLU decomposition is correct - examples"
+        [ test2DList [ [ 1000 ] ]
 
-    -- , Matrix.from2DList
-    --     [ [ 1, 2, 1 ]
-    --     , [ 1, 2, 2 ]
-    --     , [ 2, 4, 1 ]
-    --     , [ 3, 2, 1 ]
-    --     ]
-    --     |> Result.withDefault (simple 0)
-    -- , Matrix.from2DList
-    --     [ [ -10, -1, 0, 0 ]
-    --     , [ -1, 0, 0, -1 ]
-    --     , [ 0, 0, -1, 0 ]
-    --     , [ 0, -1, 0, 0 ]
-    --     ]
-    --     |> Result.withDefault (simple 0)
-    ]
-        |> List.map (\m -> test ("PLU Example - A:\n" ++ Matrix.toAlignedString m) <| \_ -> checkPLU m)
-        |> describe "PLU decomposition is correct - examples"
-        |> Test.only
+        -- , Matrix.from2DList
+        --     [ [ 0, 5, 7 ]
+        --     , [ 4, 2, 1 ]
+        --     , [ 2, 7, 9 ]
+        --     ]
+        , test2DList
+            [ [ 1, 1, 0 ]
+            , [ 2, 1, -1 ]
+            , [ 3, -1, -1 ]
+            ]
+        , test2DList
+            [ [ 1, 2, 1 ]
+            , [ 1, 2, 2 ]
+            , [ 2, 1, 1 ]
+            ]
+        , test2DList
+            [ [ 1, 2, 1, 2, 1 ]
+            , [ 2, 4, 2, 4, 1 ]
+            , [ 1, 2, 1, 3, 2 ]
+            ]
+
+        -- , test2DList
+        --     [ [ 1, 2, 1 ]
+        --     , [ 1, 2, 2 ]
+        --     , [ 2, 4, 1 ]
+        --     , [ 3, 2, 1 ]
+        --     ]
+        --
+        -- , test2DList
+        --     [ [ -10, -1, 0, 0 ]
+        --     , [ -1, 0, 0, -1 ]
+        --     , [ 0, 0, -1, 0 ]
+        --     , [ 0, -1, 0, 0 ]
+        --     ]
+        --
+        ]
 
 
 checkPLU : Matrix -> Expect.Expectation
