@@ -467,16 +467,21 @@ luDecomp a =
                 ("\n"
                     ++ label
                     ++ ":\n"
-                    ++ toAlignedString
-                        (Result.withDefault
-                            (eye 0)
-                            (from2DList m)
-                        )
+                    ++ toAlignedString (from2DListUnsafe m)
                 )
                 ()
 
         epsilon =
             10 ^ -14
+
+        from2DListUnsafe list =
+            list
+                |> from2DList
+                |> Result.withDefault (eye 0)
+
+        mulUnsafe x y =
+            mul x y
+                |> Result.withDefault (eye 0)
 
         -- prevP and prevU are full matrices
         -- prevL gets build column-by-column, in inverse order
@@ -487,23 +492,21 @@ luDecomp a =
             in
             if i == n then
                 let
+                    lastL =
+                        List.Extra.transpose (List.reverse prevL)
+
                     _ =
                         logMatrix "lastP" prevP
 
                     _ =
-                        logMatrix "lastL" (List.Extra.transpose (List.reverse prevL))
+                        logMatrix "lastL" lastL
 
                     _ =
                         logMatrix "lastU" prevU
-
-                    from list =
-                        list
-                            |> from2DList
-                            |> Result.withDefault (eye 0)
                 in
-                { p = from prevP
-                , l = from (List.Extra.transpose (List.reverse prevL))
-                , u = from prevU
+                { p = from2DListUnsafe prevP
+                , l = from2DListUnsafe lastL
+                , u = from2DListUnsafe prevU
                 }
 
             else
@@ -561,6 +564,7 @@ luDecomp a =
                                                     let
                                                         u_ji =
                                                             List.Extra.getAt i uRow
+                                                                |> Debug.log "\nu_ji"
                                                                 |> Maybe.withDefault 0
 
                                                         l_ji =
@@ -576,8 +580,45 @@ luDecomp a =
                                     )
                                     ( n - 1, [], [] )
                                     swappedU
+
+                            completeL =
+                                List.foldl
+                                    (\q acc ->
+                                        (List.repeat q 0 ++ 1 :: List.repeat (n - q - 1) 0) :: acc
+                                    )
+                                    (finalL :: prevL)
+                                    (List.range (i + 1) (n - 1))
+                                    |> List.reverse
+                                    |> List.Extra.transpose
+
+                            plu =
+                                to2DList
+                                    (mulUnsafe
+                                        (mulUnsafe
+                                            (from2DListUnsafe completeL)
+                                            (from2DListUnsafe swappedP)
+                                        )
+                                        (from2DListUnsafe finalU)
+                                    )
                         in
-                        go (i + 1) swappedP (finalL :: prevL) finalU
+                        if equivalent epsilon (from2DListUnsafe plu) a then
+                            go (i + 1) swappedP (finalL :: prevL) finalU
+
+                        else
+                            let
+                                _ =
+                                    logMatrix "finalU" finalU
+
+                                _ =
+                                    logMatrix "completeL" completeL
+
+                                _ =
+                                    logMatrix "plu" plu
+                            in
+                            { p = from2DListUnsafe swappedP
+                            , l = from2DListUnsafe completeL
+                            , u = from2DListUnsafe finalU
+                            }
     in
     go 0 (to2DList (eye n)) [] (to2DList a)
 
@@ -885,7 +926,6 @@ findPivot epsilon i m =
                         next : Maybe ( Int, Float, Float )
                         next =
                             List.Extra.getAt i head
-                                |> Maybe.Extra.filter (\pivot -> abs pivot > epsilon)
                                 |> Maybe.andThen
                                     (\pivot ->
                                         let
@@ -897,16 +937,20 @@ findPivot epsilon i m =
                                             candidate =
                                                 ( j, pivot, score )
                                         in
-                                        case best of
-                                            Nothing ->
-                                                Just candidate
+                                        if score < epsilon then
+                                            best
 
-                                            Just ( _, _, previousScore ) ->
-                                                if score > previousScore then
+                                        else
+                                            case best of
+                                                Nothing ->
                                                     Just candidate
 
-                                                else
-                                                    best
+                                                Just ( _, _, previousScore ) ->
+                                                    if score > previousScore then
+                                                        Just candidate
+
+                                                    else
+                                                        best
                                     )
                     in
                     go (j + 1) tail (next |> Maybe.Extra.orElse best)

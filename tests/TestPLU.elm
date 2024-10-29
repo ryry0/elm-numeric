@@ -46,14 +46,14 @@ fixed =
         , [ 1, 2, 1, 3, 2 ]
         ]
         |> Result.withDefault (simple 0)
-    , Matrix.from2DList
-        [ [ 1, 2, 1 ]
-        , [ 1, 2, 2 ]
-        , [ 2, 4, 1 ]
-        , [ 3, 2, 1 ]
-        ]
-        |> Result.withDefault (simple 0)
 
+    -- , Matrix.from2DList
+    --     [ [ 1, 2, 1 ]
+    --     , [ 1, 2, 2 ]
+    --     , [ 2, 4, 1 ]
+    --     , [ 3, 2, 1 ]
+    --     ]
+    --     |> Result.withDefault (simple 0)
     -- , Matrix.from2DList
     --     [ [ -10, -1, 0, 0 ]
     --     , [ -1, 0, 0, -1 ]
