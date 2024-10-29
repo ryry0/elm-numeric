@@ -1,12 +1,12 @@
 module Matrix.Format exposing (alignColumn, indent)
 
 
-alignColumn : List String -> List String
-alignColumn floats =
+alignColumn : String -> List String -> List String
+alignColumn alignOn floats =
     let
         splat : List ( List String, String )
         splat =
-            List.map (\f -> ( String.split "." f, f )) floats
+            List.map (\f -> ( String.split alignOn f, f )) floats
 
         ( beforeDotLength, afterDotLength ) =
             List.foldl alignColumnStep ( 0, 0 ) splat
@@ -46,7 +46,15 @@ alignColumn floats =
                         (whole
                             |> String.padLeft beforeDotLength ' '
                         )
-                            ++ "."
+                            ++ (if alignOn == "." then
+                                    "."
+
+                                else if String.contains alignOn f then
+                                    alignOn
+
+                                else
+                                    " "
+                               )
                             ++ decimal
                 in
                 leftPadded

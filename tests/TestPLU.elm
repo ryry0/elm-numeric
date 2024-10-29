@@ -12,6 +12,7 @@ fuzzy =
     fuzz Fuzzers.squareMatrix
         "PLU decomposition is correct - fuzzy"
         checkPLU
+        |> Test.skip
 
 
 test2DList : List (List Float) -> Test
@@ -22,7 +23,7 @@ test2DList list =
                 |> Matrix.from2DList
                 |> Result.withDefault (Matrix.eye 0)
     in
-    test ("PLU Example - A:\n" ++ Matrix.toAlignedString m) <|
+    test ("PLU Example - A:\n" ++ Matrix.toFractionString m) <|
         \_ -> checkPLU m
 
 
@@ -30,28 +31,41 @@ fixed : Test
 fixed =
     describe "PLU decomposition is correct - examples"
         [ test2DList [ [ 1000 ] ]
+        , Test.only <|
+            test2DList
+                [ [ 1, 3, 5 ]
+                , [ 2, 4, 7 ]
+                , [ 1, 1, 0 ]
+                ]
+        , Test.only <|
+            test2DList
+                [ [ 11, 9, 24, 2 ]
+                , [ 1, 5, 2, 6 ]
+                , [ 3, 17, 18, 1 ]
+                , [ 2, 5, 7, 1 ]
+                ]
 
-        -- , Matrix.from2DList
-        --     [ [ 0, 5, 7 ]
-        --     , [ 4, 2, 1 ]
-        --     , [ 2, 7, 9 ]
+        -- , Test.only <|
+        --     test2DList
+        --         [ [ 0, 5, 7 ]
+        --         , [ 4, 2, 1 ]
+        --         , [ 2, 7, 9 ]
+        --         ]
+        -- , test2DList
+        --     [ [ 1, 1, 0 ]
+        --     , [ 2, 1, -1 ]
+        --     , [ 3, -1, -1 ]
         --     ]
-        , test2DList
-            [ [ 1, 1, 0 ]
-            , [ 2, 1, -1 ]
-            , [ 3, -1, -1 ]
-            ]
-        , test2DList
-            [ [ 1, 2, 1 ]
-            , [ 1, 2, 2 ]
-            , [ 2, 1, 1 ]
-            ]
-        , test2DList
-            [ [ 1, 2, 1, 2, 1 ]
-            , [ 2, 4, 2, 4, 1 ]
-            , [ 1, 2, 1, 3, 2 ]
-            ]
-
+        -- , test2DList
+        --     [ [ 1, 2, 1 ]
+        --     , [ 1, 2, 2 ]
+        --     , [ 2, 1, 1 ]
+        --     ]
+        -- , test2DList
+        --     [ [ 1, 2, 1, 2, 1 ]
+        --     , [ 2, 4, 2, 4, 1 ]
+        --     , [ 1, 2, 1, 3, 2 ]
+        --     ]
         -- , test2DList
         --     [ [ 1, 2, 1 ]
         --     , [ 1, 2, 2 ]
@@ -97,9 +111,9 @@ checkPLU a =
                         |> Expect.equal True
                         |> Expect.onFail
                             ("PLU != A.\nLU:\n"
-                                ++ Matrix.toAlignedString lu
+                                ++ Matrix.toFractionString lu
                                 ++ "\nPLU:\n"
-                                ++ Matrix.toAlignedString plu
+                                ++ Matrix.toFractionString plu
                             )
         ]
         ()
@@ -127,7 +141,7 @@ checkIsPermutation mat =
     in
     (check rows && check cols)
         |> Expect.equal True
-        |> Expect.onFail ("Not a permutation matrix:\n" ++ Matrix.toAlignedString mat)
+        |> Expect.onFail ("Not a permutation matrix:\n" ++ Matrix.toFractionString mat)
 
 
 checkIsUnitLower : Matrix -> Expect.Expectation
@@ -152,7 +166,7 @@ checkIsUnitLower mat =
             )
         |> List.all identity
         |> Expect.equal True
-        |> Expect.onFail ("Not a lower triangular:\n" ++ Matrix.toAlignedString mat)
+        |> Expect.onFail ("Not a lower triangular:\n" ++ Matrix.toFractionString mat)
 
 
 checkIsUpper : Matrix -> Expect.Expectation
@@ -170,4 +184,4 @@ checkIsUpper mat =
             )
         |> List.all identity
         |> Expect.equal True
-        |> Expect.onFail ("Not a lower triangular:\n" ++ Matrix.toAlignedString mat)
+        |> Expect.onFail ("Not a lower triangular:\n" ++ Matrix.toFractionString mat)

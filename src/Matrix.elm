@@ -7,6 +7,7 @@ module Matrix exposing
     , mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
     , toString, toAlignedString, debugPrint
     , to2DList, toFlatList
+    , toFractionString
     )
 
 {-| A matrix library written completely in Elm.
@@ -467,7 +468,7 @@ luDecomp a =
                 ("\n"
                     ++ label
                     ++ ":\n"
-                    ++ toAlignedString (from2DListUnsafe m)
+                    ++ toFractionString (from2DListUnsafe m)
                 )
                 ()
 
@@ -1508,10 +1509,72 @@ toAlignedString a =
         |> to2DList
         |> List.map (\row -> List.map String.fromFloat row)
         |> List.Extra.transpose
-        |> List.map Matrix.Format.alignColumn
+        |> List.map (Matrix.Format.alignColumn ".")
         |> List.Extra.transpose
         |> List.map (String.join " ")
         |> String.join "\n"
+
+
+toFractionString : Matrix -> String
+toFractionString a =
+    a
+        |> to2DList
+        |> List.map (\row -> List.map toFraction row)
+        |> List.Extra.transpose
+        |> List.map (Matrix.Format.alignColumn "/")
+        |> List.Extra.transpose
+        |> List.map (String.join " ")
+        |> String.join "\n"
+
+
+toFraction : Float -> String
+toFraction f =
+    let
+        below =
+            floor f
+
+        above =
+            ceiling f
+
+        go budget ln ld un ud =
+            let
+                mn =
+                    ln + un
+
+                md =
+                    ld + ud
+
+                mid =
+                    toFloat mn / toFloat md
+            in
+            if budget <= 0 || mid == f then
+                let
+                    g =
+                        gcd (abs mn) (abs md)
+
+                    gcd a b =
+                        if a < b then
+                            gcd b a
+
+                        else if b == 0 then
+                            a
+
+                        else
+                            gcd (modBy b a) b
+                in
+                if md // g == 1 then
+                    String.fromInt (mn // g)
+
+                else
+                    String.fromInt (mn // g) ++ "/" ++ String.fromInt (md // g)
+
+            else if f < mid then
+                go (budget - 1) ln ld mn md
+
+            else
+                go (budget - 1) mn md un ud
+    in
+    go 100 below 1 above 1
 
 
 {-| Helper to re-2dify a flat matrix
