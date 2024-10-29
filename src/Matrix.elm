@@ -780,43 +780,37 @@ findPivot i m =
                     let
                         next : Maybe ( Int, Float, Float )
                         next =
-                            case List.Extra.maximumBy abs head of
-                                Nothing ->
-                                    best
+                            head
+                                |> List.Extra.maximumBy abs
+                                |> Maybe.andThen
+                                    (\big ->
+                                        List.Extra.getAt i head
+                                            |> Maybe.Extra.filter (\pivot -> pivot /= 0)
+                                            |> Maybe.andThen
+                                                (\pivot ->
+                                                    let
+                                                        score : Float
+                                                        score =
+                                                            abs pivot / abs big
 
-                                Just big ->
-                                    case List.Extra.getAt i head of
-                                        Nothing ->
-                                            best
-
-                                        Just pivot ->
-                                            if pivot == 0 then
-                                                best
-
-                                            else
-                                                let
-                                                    score : Float
-                                                    score =
-                                                        abs pivot / abs big
-
-                                                    candidate : ( Int, Float, Float )
-                                                    candidate =
-                                                        ( j, pivot, score )
-                                                in
-                                                case best of
-                                                    Nothing ->
-                                                        Just candidate
-
-                                                    Just ( _, _, previousScore ) ->
-                                                        if score > previousScore then
+                                                        candidate : ( Int, Float, Float )
+                                                        candidate =
+                                                            ( j, pivot, score )
+                                                    in
+                                                    case best of
+                                                        Nothing ->
                                                             Just candidate
 
-                                                        else
-                                                            best
+                                                        Just ( _, _, previousScore ) ->
+                                                            if score > previousScore then
+                                                                Just candidate
+
+                                                            else
+                                                                best
+                                                )
+                                    )
                     in
-                    go (j + 1)
-                        tail
-                        next
+                    go (j + 1) tail (next |> Maybe.Extra.orElse best)
     in
     go i (List.drop i m) Nothing
 
