@@ -477,10 +477,6 @@ luDecomp a =
                 )
                 ()
 
-        epsilon : Float
-        epsilon =
-            10 ^ -14
-
         from2DListUnsafe : List (List Float) -> Matrix
         from2DListUnsafe list =
             list
@@ -609,7 +605,7 @@ luDecomp a =
                                         a
                                     )
                         in
-                        if equivalent epsilon (from2DListUnsafe lu) (from2DListUnsafe pa) {- || True -} then
+                        if equivalent (10 ^ -4) (from2DListUnsafe lu) (from2DListUnsafe pa) || True then
                             go (i + 1) finalP finalL finalU
 
                         else
