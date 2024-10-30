@@ -524,8 +524,12 @@ luDecomp a =
                     _ =
                         logMatrix "prevU" prevU
                 in
-                case findPivot epsilon i prevU of
+                case findPivot i prevU of
                     Nothing ->
+                        let
+                            _ =
+                                Debug.log "\nColumn is already zero" ()
+                        in
                         go (i + 1) prevP prevL prevU
 
                     Just ( index, pivot ) ->
@@ -864,9 +868,6 @@ sDiv a b =
 invert : Matrix -> Result String Matrix
 invert a =
     let
-        epsilon =
-            10 ^ -14
-
         n : Int
         n =
             numRows a
@@ -877,7 +878,7 @@ invert a =
                 from2DList (List.map (List.drop n) acc)
 
             else
-                case findPivot epsilon i acc of
+                case findPivot i acc of
                     Nothing ->
                         Err "Matrix is singular"
 
@@ -930,8 +931,8 @@ invert a =
         go 0 (List.map2 (++) (to2DList a) (to2DList (eye n)))
 
 
-findPivot : Float -> Int -> List (List Float) -> Maybe ( Int, Float )
-findPivot epsilon i m =
+findPivot : Int -> List (List Float) -> Maybe ( Int, Float )
+findPivot i m =
     let
         go j queue best =
             case queue of
@@ -954,7 +955,7 @@ findPivot epsilon i m =
                                             candidate =
                                                 ( j, pivot, score )
                                         in
-                                        if score < epsilon then
+                                        if score == 0 then
                                             best
 
                                         else
@@ -963,7 +964,7 @@ findPivot epsilon i m =
                                                     Just candidate
 
                                                 Just ( _, _, previousScore ) ->
-                                                    if score > previousScore && False then
+                                                    if score > previousScore then
                                                         Just candidate
 
                                                     else

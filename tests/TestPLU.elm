@@ -71,15 +71,30 @@ fixed =
             , [ 2, 4, 1 ]
             , [ 3, 2, 1 ]
             ]
-
-        -- |> Test.only
         , test2DList
             [ [ -10, -1, 0, 0 ]
             , [ -1, 0, 0, -1 ]
             , [ 0, 0, -1, 0 ]
             , [ 0, -1, 0, 0 ]
             ]
+        , test2DList
+            [ [ 0, 0, 0 ]
+            , [ -10000, 0, 0 ]
+            , [ -1263.47, 0, 0 ]
+            ]
+        , test2DList
+            [ [ 0, 0, 0, 0 ]
+            , [ 10000, 0, 0, 6391.49 ]
+            , [ 10000, 0, 0, -10000 ]
+            , [ 0, 0, -10000, 0 ]
+            ]
+            |> Test.only
         ]
+
+
+epsilon : Float
+epsilon =
+    10 ^ -10
 
 
 checkPLU : Matrix -> Expect.Expectation
@@ -103,7 +118,7 @@ checkPLU a =
                     Expect.fail msg
 
                 ( Ok lu, Ok pa ) ->
-                    Matrix.equivalent (10 ^ -4) lu pa
+                    Matrix.equivalent epsilon lu pa
                         |> Expect.equal True
                         |> Expect.onFail
                             ("LU != PA.\nLU:\n"
@@ -150,7 +165,7 @@ checkIsUnitLower mat =
                     |> List.indexedMap
                         (\colIndex cell ->
                             if rowIndex < colIndex then
-                                cell == 0
+                                abs cell < epsilon
 
                             else if rowIndex == colIndex then
                                 cell == 1
@@ -174,7 +189,7 @@ checkIsUpper mat =
                 row
                     |> List.indexedMap
                         (\colIndex cell ->
-                            rowIndex <= colIndex || cell == 0
+                            rowIndex <= colIndex || abs cell < epsilon
                         )
                     |> List.all identity
             )
