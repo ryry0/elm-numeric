@@ -10,6 +10,7 @@ invertibleMatrix =
         |> Fuzz.filter
             (\m ->
                 let
+                    det : Maybe Float
                     det =
                         Matrix.determinant m
                 in

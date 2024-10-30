@@ -21,6 +21,7 @@ fuzzy =
 test2DList : List (List Float) -> Test
 test2DList list =
     let
+        m : Matrix
         m =
             list
                 |> Matrix.from2DList

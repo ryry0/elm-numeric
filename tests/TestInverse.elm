@@ -59,10 +59,6 @@ fuzzed =
 
 canInvert : Matrix -> Expect.Expectation
 canInvert m =
-    let
-        ( n, _ ) =
-            Matrix.size m
-    in
     case Matrix.invert m of
         Ok inv ->
             case Matrix.mul m inv of
@@ -70,6 +66,10 @@ canInvert m =
                     Expect.fail e
 
                 Ok maybeEye ->
+                    let
+                        ( n, _ ) =
+                            Matrix.size m
+                    in
                     if Matrix.equivalent (10 ^ -4) maybeEye (Matrix.eye n) then
                         Expect.pass
 
