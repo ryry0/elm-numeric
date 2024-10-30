@@ -7,7 +7,6 @@ module Matrix exposing
     , mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
     , toString, toAlignedString, debugPrint
     , to2DList, toFlatList
-    , toFractionString
     )
 
 {-| A matrix library written completely in Elm.
@@ -300,6 +299,8 @@ eye diagonal =
         )
 
 
+{-| Create a matrix given a size and a function from row and column to value.
+-}
 initialize : ( Int, Int ) -> (Int -> Int -> Float) -> Matrix
 initialize ( rows, cols ) gen =
     Mat
@@ -536,20 +537,24 @@ luDecomp a =
                         let
                             -- _ =
                             --     Debug.log "\nindex" index
+                            swappedU : List (List Float)
                             swappedU =
                                 List.Extra.swapAt index i prevU
 
                             -- _ =
                             --     logMatrix "swappedU" swappedU
+                            swappedP : List (List Float)
                             swappedP =
                                 prevP
                                     |> List.Extra.swapAt index i
 
+                            finalP : List (List Float)
                             finalP =
                                 swappedP
 
                             -- _ =
                             --     logMatrix "swappedP" swappedP
+                            swappedL : List (List Float)
                             swappedL =
                                 prevL
                                     |> List.Extra.swapAt index i
@@ -557,6 +562,7 @@ luDecomp a =
 
                             -- _ =
                             --     logMatrix "swappedL" swappedL
+                            u_i : List Float
                             u_i =
                                 List.Extra.getAt i swappedU
                                     |> Maybe.withDefault []
@@ -571,10 +577,12 @@ luDecomp a =
 
                                                 else
                                                     let
+                                                        u_ji : Float
                                                         u_ji =
                                                             List.Extra.getAt i u_j
                                                                 |> Maybe.withDefault 0
 
+                                                        l_ji : Float
                                                         l_ji =
                                                             u_ji / pivot
                                                     in
@@ -939,6 +947,7 @@ invert a =
 findPivot : Int -> List (List Float) -> Maybe ( Int, Float )
 findPivot i m =
     let
+        go : Int -> List (List Float) -> Maybe ( Int, Float, Float ) -> Maybe ( Int, Float )
         go j queue best =
             case queue of
                 [] ->
@@ -1528,72 +1537,10 @@ toAlignedString a =
         |> to2DList
         |> List.map (\row -> List.map String.fromFloat row)
         |> List.Extra.transpose
-        |> List.map (Matrix.Format.alignColumn ".")
+        |> List.map Matrix.Format.alignColumn
         |> List.Extra.transpose
         |> List.map (String.join " ")
         |> String.join "\n"
-
-
-toFractionString : Matrix -> String
-toFractionString a =
-    a
-        |> to2DList
-        |> List.map (\row -> List.map toFraction row)
-        |> List.Extra.transpose
-        |> List.map (Matrix.Format.alignColumn "/")
-        |> List.Extra.transpose
-        |> List.map (String.join " ")
-        |> String.join "\n"
-
-
-toFraction : Float -> String
-toFraction f =
-    let
-        below =
-            floor f
-
-        above =
-            ceiling f
-
-        go budget ln ld un ud =
-            let
-                mn =
-                    ln + un
-
-                md =
-                    ld + ud
-
-                mid =
-                    toFloat mn / toFloat md
-            in
-            if budget <= 0 || mid == f then
-                let
-                    g =
-                        gcd (abs mn) (abs md)
-
-                    gcd a b =
-                        if a < b then
-                            gcd b a
-
-                        else if b == 0 then
-                            a
-
-                        else
-                            gcd (modBy b a) b
-                in
-                if md // g == 1 then
-                    String.fromInt (mn // g)
-
-                else
-                    String.fromInt (mn // g) ++ "/" ++ String.fromInt (md // g)
-
-            else if f < mid then
-                go (budget - 1) ln ld mn md
-
-            else
-                go (budget - 1) mn md un ud
-    in
-    go 100 below 1 above 1
 
 
 {-| Helper to re-2dify a flat matrix

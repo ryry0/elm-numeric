@@ -10,7 +10,7 @@ suite =
     describe "Test alignColumn"
         [ test "Aligns zeroes" <|
             \_ ->
-                Matrix.Format.alignColumn "."
+                Matrix.Format.alignColumn
                     [ "-4.69"
                     , "0"
                     , "0"
@@ -22,7 +22,7 @@ suite =
                         ]
         , test "aligns when longer on the right" <|
             \_ ->
-                Matrix.Format.alignColumn "."
+                Matrix.Format.alignColumn
                     [ "0.000469"
                     , "4.69"
                     , "4.69"
@@ -34,7 +34,7 @@ suite =
                         ]
         , test "aligns when longer on the left" <|
             \_ ->
-                Matrix.Format.alignColumn "."
+                Matrix.Format.alignColumn
                     [ "0.000469"
                     , "25.97"
                     , "25.97"
