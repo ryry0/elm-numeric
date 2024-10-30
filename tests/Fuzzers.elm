@@ -13,7 +13,7 @@ invertibleMatrix =
                     det =
                         Matrix.determinant m
                 in
-                det /= Nothing
+                det /= Just 0
             )
 
 

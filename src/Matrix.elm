@@ -468,16 +468,15 @@ luDecomp a =
         cols =
             numColumns a
 
-        logMatrix : String -> List (List Float) -> ()
-        logMatrix label m =
-            Debug.log
-                ("\n"
-                    ++ label
-                    ++ ":\n"
-                    ++ toAlignedString (from2DListUnsafe m)
-                )
-                ()
-
+        -- logMatrix : String -> List (List Float) -> ()
+        -- logMatrix label m =
+        --     Debug.log
+        --         ("\n"
+        --             ++ label
+        --             ++ ":\n"
+        --             ++ toAlignedString (from2DListUnsafe m)
+        --         )
+        --         ()
         from2DListUnsafe : List (List Float) -> Matrix
         from2DListUnsafe list =
             list
@@ -497,21 +496,19 @@ luDecomp a =
                 , detP : Int
                 }
         go i prevP prevL prevU prevDet =
-            let
-                _ =
-                    Debug.log "\n------------------ i" i
-            in
+            -- let
+            --     _ =
+            --         Debug.log "\n------------------ i" i
+            -- in
             if i == min rows cols then
-                let
-                    _ =
-                        logMatrix "lastP" prevP
-
-                    _ =
-                        logMatrix "lastL" prevL
-
-                    _ =
-                        logMatrix "lastU" prevU
-                in
+                -- let
+                --     _ =
+                --         logMatrix "lastP" prevP
+                --     _ =
+                --         logMatrix "lastL" prevL
+                --     _ =
+                --         logMatrix "lastU" prevU
+                -- in
                 { p = from2DListUnsafe prevP
                 , l = from2DListUnsafe prevL
                 , u = from2DListUnsafe prevU
@@ -519,35 +516,31 @@ luDecomp a =
                 }
 
             else
-                let
-                    _ =
-                        logMatrix "prevP" prevP
-
-                    _ =
-                        logMatrix "prevL" prevL
-
-                    _ =
-                        logMatrix "prevU" prevU
-                in
+                -- let
+                --     _ =
+                --         logMatrix "prevP" prevP
+                --     _ =
+                --         logMatrix "prevL" prevL
+                --     _ =
+                --         logMatrix "prevU" prevU
+                -- in
                 case findPivot i prevU of
                     Nothing ->
-                        let
-                            _ =
-                                Debug.log "\nColumn is already zero" ()
-                        in
+                        -- let
+                        --     _ =
+                        --         Debug.log "\nColumn is already zero" ()
+                        -- in
                         go (i + 1) prevP prevL prevU prevDet
 
                     Just ( index, pivot ) ->
                         let
-                            _ =
-                                Debug.log "\nindex" index
-
+                            -- _ =
+                            --     Debug.log "\nindex" index
                             swappedU =
                                 List.Extra.swapAt index i prevU
 
-                            _ =
-                                logMatrix "swappedU" swappedU
-
+                            -- _ =
+                            --     logMatrix "swappedU" swappedU
                             swappedP =
                                 prevP
                                     |> List.Extra.swapAt index i
@@ -555,17 +548,15 @@ luDecomp a =
                             finalP =
                                 swappedP
 
-                            _ =
-                                logMatrix "swappedP" swappedP
-
+                            -- _ =
+                            --     logMatrix "swappedP" swappedP
                             swappedL =
                                 prevL
                                     |> List.Extra.swapAt index i
                                     |> List.map (\row -> List.Extra.swapAt index i row)
 
-                            _ =
-                                logMatrix "swappedL" swappedL
-
+                            -- _ =
+                            --     logMatrix "swappedL" swappedL
                             u_i =
                                 List.Extra.getAt i swappedU
                                     |> Maybe.withDefault []
@@ -893,46 +884,50 @@ invert a =
                         Err "Matrix is singular"
 
                     Just ( j, pivot ) ->
-                        let
-                            swapped : List (List Float)
-                            swapped =
-                                List.Extra.swapAt i j acc
+                        if abs pivot < 10 ^ -10 then
+                            Err "Matrix is singular"
 
-                            scaled : List (List Float)
-                            scaled =
-                                List.Extra.updateAt
-                                    i
-                                    (List.map (\v -> v / pivot))
-                                    swapped
+                        else
+                            let
+                                swapped : List (List Float)
+                                swapped =
+                                    List.Extra.swapAt i j acc
 
-                            scaledRow : List Float
-                            scaledRow =
-                                scaled
-                                    |> List.drop i
-                                    |> List.head
-                                    |> Maybe.withDefault []
+                                scaled : List (List Float)
+                                scaled =
+                                    List.Extra.updateAt
+                                        i
+                                        (List.map (\v -> v / pivot))
+                                        swapped
 
-                            reduced : List (List Float)
-                            reduced =
-                                scaled
-                                    |> List.indexedMap
-                                        (\r row ->
-                                            if r == i then
-                                                row
+                                scaledRow : List Float
+                                scaledRow =
+                                    scaled
+                                        |> List.drop i
+                                        |> List.head
+                                        |> Maybe.withDefault []
 
-                                            else
-                                                let
-                                                    l : Float
-                                                    l =
-                                                        row
-                                                            |> List.drop i
-                                                            |> List.head
-                                                            |> Maybe.withDefault 1
-                                                in
-                                                List.map2 (\v s -> v - s * l) row scaledRow
-                                        )
-                        in
-                        go (i + 1) reduced
+                                reduced : List (List Float)
+                                reduced =
+                                    scaled
+                                        |> List.indexedMap
+                                            (\r row ->
+                                                if r == i then
+                                                    row
+
+                                                else
+                                                    let
+                                                        l : Float
+                                                        l =
+                                                            row
+                                                                |> List.drop i
+                                                                |> List.head
+                                                                |> Maybe.withDefault 1
+                                                    in
+                                                    List.map2 (\v s -> v - s * l) row scaledRow
+                                            )
+                            in
+                            go (i + 1) reduced
     in
     if numColumns a /= n then
         Err "Could not invert matrix, it's not a square"

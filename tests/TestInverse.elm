@@ -39,16 +39,6 @@ simple =
                             |> force
                 in
                 canInvert hundred
-        , test "Invert simple matrix #3" <|
-            \_ ->
-                let
-                    hundred : Matrix
-                    hundred =
-                        Matrix.fromList ( 3, 3 )
-                            [ -10000, -4.69, -25.97, -10000, 0, 0, -10000, 0, 0 ]
-                            |> force
-                in
-                canInvert hundred
         ]
 
 
@@ -103,9 +93,6 @@ canInvert m =
                                 ]
                         in
                         Expect.fail (String.join "\n" message)
-
-        Err "Matrix is singular" ->
-            Expect.pass
 
         Err e ->
             Expect.fail e

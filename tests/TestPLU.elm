@@ -93,7 +93,8 @@ fixed =
             , [ -10000, 0.0, 0.0 ]
             , [ -10000, 0.0, 0.0 ]
             ]
-            |> Test.only
+        , test2DList [ [ 1 ] ]
+        , test2DList [ [ 0 ] ]
         ]
 
 
