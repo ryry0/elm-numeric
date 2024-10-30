@@ -549,6 +549,16 @@ luDecomp a =
                             _ =
                                 logMatrix "swappedP" swappedP
 
+                            swappedL =
+                                prevL
+                                    |> List.Extra.swapAt index i
+                                    |> List.Extra.transpose
+                                    |> List.Extra.swapAt index i
+                                    |> List.Extra.transpose
+
+                            _ =
+                                logMatrix "swappedL" swappedL
+
                             u_i =
                                 List.Extra.getAt i swappedU
                                     |> Maybe.withDefault []
@@ -579,19 +589,23 @@ luDecomp a =
                                         ( j - 1, nextL :: accL, nextU :: accU )
                                     )
                                     ( rows - 1, [], [] )
-                                    (List.map2 Tuple.pair prevL swappedU)
+                                    (List.map2 Tuple.pair swappedL swappedU)
 
-                            plu =
+                            lu =
                                 to2DList
                                     (mulUnsafe
-                                        (mulUnsafe
-                                            (from2DListUnsafe finalP)
-                                            (from2DListUnsafe finalL)
-                                        )
+                                        (from2DListUnsafe finalL)
                                         (from2DListUnsafe finalU)
                                     )
+
+                            pa =
+                                to2DList
+                                    (mulUnsafe
+                                        (from2DListUnsafe finalP)
+                                        a
+                                    )
                         in
-                        if equivalent epsilon (from2DListUnsafe plu) a {- || True -} then
+                        if equivalent epsilon (from2DListUnsafe lu) (from2DListUnsafe pa) {- || True -} then
                             go (i + 1) finalP finalL finalU
 
                         else
@@ -606,7 +620,10 @@ luDecomp a =
                                     logMatrix "finalL" finalL
 
                                 _ =
-                                    logMatrix "wrong PLU" plu
+                                    logMatrix "wrong LU" lu
+
+                                _ =
+                                    logMatrix "PA" pa
 
                                 _ =
                                     logMatrix "A" (to2DList a)
@@ -946,7 +963,7 @@ findPivot epsilon i m =
                                                     Just candidate
 
                                                 Just ( _, _, previousScore ) ->
-                                                    if score > previousScore then
+                                                    if score > previousScore && False then
                                                         Just candidate
 
                                                     else

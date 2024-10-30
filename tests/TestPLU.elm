@@ -71,6 +71,8 @@ fixed =
             , [ 2, 4, 1 ]
             , [ 3, 2, 1 ]
             ]
+
+        -- |> Test.only
         , test2DList
             [ [ -10, -1, 0, 0 ]
             , [ -1, 0, 0, -1 ]
@@ -92,25 +94,22 @@ checkPLU a =
         , \_ -> checkIsUpper u
         , \_ ->
             case
-                Matrix.mul p l
-                    |> Result.andThen (\pl -> Matrix.mul pl u)
+                ( Matrix.mul l u, Matrix.mul p a )
             of
-                Err msg ->
+                ( Err msg, _ ) ->
                     Expect.fail msg
 
-                Ok plu ->
-                    let
-                        lu =
-                            Matrix.mul l u
-                                |> Result.withDefault (Matrix.eye 0)
-                    in
-                    Matrix.equivalent (10 ^ -4) plu a
+                ( _, Err msg ) ->
+                    Expect.fail msg
+
+                ( Ok lu, Ok pa ) ->
+                    Matrix.equivalent (10 ^ -4) lu pa
                         |> Expect.equal True
                         |> Expect.onFail
-                            ("PLU != A.\nLU:\n"
+                            ("LU != PA.\nLU:\n"
                                 ++ Matrix.toAlignedString lu
-                                ++ "\nPLU:\n"
-                                ++ Matrix.toAlignedString plu
+                                ++ "\nPA:\n"
+                                ++ Matrix.toAlignedString pa
                             )
         ]
         ()
