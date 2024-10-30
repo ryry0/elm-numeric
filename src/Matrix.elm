@@ -956,24 +956,20 @@ findPivot i m =
                                             score =
                                                 abs pivot
 
-                                            candidate : ( Int, Float, Float )
-                                            candidate =
-                                                ( j, pivot, score )
+                                            previousScore : Float
+                                            previousScore =
+                                                case best of
+                                                    Nothing ->
+                                                        0
+
+                                                    Just ( _, _, s ) ->
+                                                        s
                                         in
-                                        if score == 0 then
-                                            best
+                                        if score > previousScore then
+                                            Just ( j, pivot, score )
 
                                         else
-                                            case best of
-                                                Nothing ->
-                                                    Just candidate
-
-                                                Just ( _, _, previousScore ) ->
-                                                    if score > previousScore then
-                                                        Just candidate
-
-                                                    else
-                                                        best
+                                            best
                                     )
                     in
                     go (j + 1) tail (next |> Maybe.Extra.orElse best)
