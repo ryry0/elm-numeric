@@ -1,7 +1,20 @@
-module Fuzzers exposing (squareMatrix)
+module Fuzzers exposing (invertibleMatrix, squareMatrix)
 
 import Fuzz exposing (Fuzzer)
 import Matrix exposing (Matrix)
+
+
+invertibleMatrix : Fuzzer Matrix
+invertibleMatrix =
+    squareMatrix
+        |> Fuzz.filter
+            (\m ->
+                let
+                    det =
+                        Matrix.determinant m
+                in
+                det /= Nothing
+            )
 
 
 squareMatrix : Fuzzer Matrix

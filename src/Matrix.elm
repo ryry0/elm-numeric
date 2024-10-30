@@ -448,15 +448,16 @@ mul a b =
 
 {-| Get the PLU (LU with pivoting) decomposition of a matrix.
 
-Given `A` returns `P`, `L`, `U` such that:
+Given `A` returns `P`, `L`, `U`, `detP` such that:
 
   - `A = P L U`,
   - `P` is a permutation matrix,
+  - `detP` is the determinant of P (this is always +1 or -1),
   - `L` is lower triangular with ones on the diagonal and
   - `U` is upper triangular.
 
 -}
-luDecomp : Matrix -> { p : Matrix, l : Matrix, u : Matrix }
+luDecomp : Matrix -> { p : Matrix, l : Matrix, u : Matrix, detP : Int }
 luDecomp a =
     let
         rows : Int
@@ -483,12 +484,19 @@ luDecomp a =
                 |> from2DList
                 |> Result.withDefault (eye 0)
 
-        mulUnsafe : Matrix -> Matrix -> Matrix
-        mulUnsafe x y =
-            mul x y
-                |> Result.withDefault (eye 0)
-
-        go i prevP prevL prevU =
+        go :
+            Int
+            -> List (List Float)
+            -> List (List Float)
+            -> List (List Float)
+            -> Int
+            ->
+                { p : Matrix
+                , l : Matrix
+                , u : Matrix
+                , detP : Int
+                }
+        go i prevP prevL prevU prevDet =
             let
                 _ =
                     Debug.log "\n------------------ i" i
@@ -507,6 +515,7 @@ luDecomp a =
                 { p = from2DListUnsafe prevP
                 , l = from2DListUnsafe prevL
                 , u = from2DListUnsafe prevU
+                , detP = prevDet
                 }
 
             else
@@ -526,7 +535,7 @@ luDecomp a =
                             _ =
                                 Debug.log "\nColumn is already zero" ()
                         in
-                        go (i + 1) prevP prevL prevU
+                        go (i + 1) prevP prevL prevU prevDet
 
                     Just ( index, pivot ) ->
                         let
@@ -552,9 +561,7 @@ luDecomp a =
                             swappedL =
                                 prevL
                                     |> List.Extra.swapAt index i
-                                    |> List.Extra.transpose
-                                    |> List.Extra.swapAt index i
-                                    |> List.Extra.transpose
+                                    |> List.map (\row -> List.Extra.swapAt index i row)
 
                             _ =
                                 logMatrix "swappedL" swappedL
@@ -591,53 +598,60 @@ luDecomp a =
                                     ( rows - 1, [], [] )
                                     (List.map2 Tuple.pair swappedL swappedU)
 
-                            lu =
-                                to2DList
-                                    (mulUnsafe
-                                        (from2DListUnsafe finalL)
-                                        (from2DListUnsafe finalU)
-                                    )
-
-                            pa =
-                                to2DList
-                                    (mulUnsafe
-                                        (from2DListUnsafe finalP)
-                                        a
-                                    )
+                            -- mulUnsafe : Matrix -> Matrix -> Matrix
+                            -- mulUnsafe x y =
+                            --     mul x y
+                            --         |> Result.withDefault (eye 0)
+                            -- lu =
+                            --     to2DList
+                            --         (mulUnsafe
+                            --             (from2DListUnsafe finalL)
+                            --             (from2DListUnsafe finalU)
+                            --         )
+                            -- pa =
+                            --     to2DList
+                            --         (mulUnsafe
+                            --             (from2DListUnsafe finalP)
+                            --             a
+                            --         )
                         in
-                        if equivalent (10 ^ -4) (from2DListUnsafe lu) (from2DListUnsafe pa) || True then
-                            go (i + 1) finalP finalL finalU
+                        -- if equivalent (10 ^ -4) (from2DListUnsafe lu) (from2DListUnsafe pa) || True then
+                        go (i + 1)
+                            finalP
+                            finalL
+                            finalU
+                            (if i == index then
+                                prevDet
 
-                        else
-                            let
-                                _ =
-                                    logMatrix "finalP" finalP
+                             else
+                                -prevDet
+                            )
 
-                                _ =
-                                    logMatrix "finalU" finalU
-
-                                _ =
-                                    logMatrix "finalL" finalL
-
-                                _ =
-                                    logMatrix "wrong LU" lu
-
-                                _ =
-                                    logMatrix "PA" pa
-
-                                _ =
-                                    logMatrix "A" (to2DList a)
-                            in
-                            { p = from2DListUnsafe finalP
-                            , l = from2DListUnsafe finalL
-                            , u = from2DListUnsafe finalU
-                            }
-
+        -- else
+        --     let
+        --         _ =
+        --             logMatrix "finalP" finalP
+        --         _ =
+        --             logMatrix "finalU" finalU
+        --         _ =
+        --             logMatrix "finalL" finalL
+        --         _ =
+        --             logMatrix "wrong LU" lu
+        --         _ =
+        --             logMatrix "PA" pa
+        --         _ =
+        --             logMatrix "A" (to2DList a)
+        --     in
+        --     { p = from2DListUnsafe finalP
+        --     , l = from2DListUnsafe finalL
+        --     , u = from2DListUnsafe finalU
+        --     , detP = prevDet
+        --     }
         eyeN : List (List Float)
         eyeN =
             to2DList (eye rows)
     in
-    go 0 eyeN eyeN (to2DList a)
+    go 0 eyeN eyeN (to2DList a) 1
 
 
 {-| Performs lu factorization
@@ -1247,15 +1261,18 @@ determinant : Matrix -> Maybe Float
 determinant a =
     if numRows a == numColumns a then
         let
-            single : Matrix
-            single =
-                luNoPivotSingle a
+            { u, detP } =
+                luDecomp a
+
+            detU : Float
+            detU =
+                u
+                    |> to2DList
+                    |> List.indexedMap
+                        (\i row -> List.Extra.getAt i row |> Maybe.withDefault 0)
+                    |> List.product
         in
-        List.range 1 (numRows a)
-            |> List.map (\x -> ( x, x ))
-            |> List.map (\x -> Maybe.withDefault 0.0 (get x single))
-            |> List.product
-            |> Just
+        Just (toFloat detP * detU)
 
     else
         Nothing

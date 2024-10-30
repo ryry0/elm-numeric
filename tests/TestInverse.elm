@@ -64,9 +64,7 @@ force res =
 
 fuzzed : Test
 fuzzed =
-    fuzz Fuzzers.squareMatrix
-        "Invert fuzzed matrix"
-        canInvert
+    fuzz Fuzzers.invertibleMatrix "Invert fuzzed matrix" canInvert
 
 
 canInvert : Matrix -> Expect.Expectation
