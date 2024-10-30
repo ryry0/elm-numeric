@@ -873,6 +873,8 @@ sDiv a b =
     identity =
         mul a inva
 
+This computation is inevitably numerically unstable. Most of the time you should use the LU decomposition instead of this.
+
 -}
 invert : Matrix -> Result String Matrix
 invert a =
