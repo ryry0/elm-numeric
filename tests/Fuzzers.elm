@@ -13,7 +13,12 @@ invertibleMatrix =
                     det =
                         Matrix.determinant m
                 in
-                det /= Just 0
+                case det of
+                    Nothing ->
+                        True
+
+                    Just d ->
+                        abs d > 0.001
             )
 
 
