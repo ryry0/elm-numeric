@@ -11,7 +11,13 @@ squareMatrix =
         bound =
             10 ^ 4
     in
-    Fuzz.intRange 1 5
+    Fuzz.frequencyValues
+        [ ( 10, 1 )
+        , ( 1000, 2 )
+        , ( 100, 3 )
+        , ( 10, 4 )
+        , ( 1, 5 )
+        ]
         |> Fuzz.andThen
             (\n ->
                 Fuzz.floatRange -bound bound
