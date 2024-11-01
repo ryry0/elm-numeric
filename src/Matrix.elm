@@ -4,7 +4,7 @@ module Matrix exposing
     , cvecFromList, rvecFromList, cvec, rvec, vec
     , cross, dot
     , add, equivalent, sMul, sDiv, map, map2, eMul
-    , mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
+    , mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecompose, getRows, getColumns, size
     , toString, toAlignedString, debugPrint
     , to2DList, toFlatList
     )
@@ -48,7 +48,7 @@ transposes, multiplication, and inversion.
 
 # Matrix Operations
 
-@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecomp, getRows, getColumns, size
+@docs mul, vcat, hcat, get, set, transpose, determinant, det, solveV, solve, invert, inv, luDecompose, getRows, getColumns, size
 
 
 # Matrix Display
@@ -458,8 +458,8 @@ Given `A` returns `P`, `L`, `U`, `detP` such that:
   - `U` is upper triangular.
 
 -}
-luDecomp : Matrix -> { p : Matrix, l : Matrix, u : Matrix, detP : Int }
-luDecomp a =
+luDecompose : Matrix -> { p : Matrix, l : Matrix, u : Matrix, detP : Int }
+luDecompose a =
     let
         rows : Int
         rows =
@@ -1075,7 +1075,7 @@ solveV a b =
 
 
 {-| Applies forward and backward substitution, decoupling substitution from
-computing lu decomp
+computing lu decomposition
 -}
 applySubstitution : Matrix -> Matrix -> Matrix
 applySubstitution single b =
@@ -1264,7 +1264,7 @@ determinant a =
     if numRows a == numColumns a then
         let
             { u, detP } =
-                luDecomp a
+                luDecompose a
 
             detU : Float
             detU =

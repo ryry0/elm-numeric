@@ -113,7 +113,7 @@ checkPLU : Matrix -> Expect.Expectation
 checkPLU a =
     let
         { p, l, u } =
-            Matrix.luDecomp a
+            Matrix.luDecompose a
     in
     Expect.all
         [ \_ -> checkIsPermutation p
