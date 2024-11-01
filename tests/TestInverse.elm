@@ -1,8 +1,9 @@
-module Tests exposing (fuzzed, simple)
+module TestInverse exposing (fuzzed, simple)
 
 import Expect
-import Fuzz exposing (Fuzzer)
+import Fuzzers
 import Matrix exposing (Matrix)
+import Matrix.Format
 import Test exposing (Test, describe, fuzz, test)
 
 
@@ -15,8 +16,8 @@ simple =
                     flip : Matrix
                     flip =
                         Matrix.initialize ( 2, 2 )
-                            (\i ->
-                                if i == 0 || i == 3 then
+                            (\r c ->
+                                if r == c then
                                     0
 
                                 else
@@ -53,17 +54,11 @@ force res =
 
 fuzzed : Test
 fuzzed =
-    fuzz squareMatrixFuzzer
-        "Invert fuzzed matrix"
-        canInvert
+    fuzz Fuzzers.invertibleMatrix "Invert fuzzed matrix" canInvert
 
 
 canInvert : Matrix -> Expect.Expectation
 canInvert m =
-    let
-        ( n, _ ) =
-            Matrix.size m
-    in
     case Matrix.invert m of
         Ok inv ->
             case Matrix.mul m inv of
@@ -71,30 +66,33 @@ canInvert m =
                     Expect.fail e
 
                 Ok maybeEye ->
+                    let
+                        ( n, _ ) =
+                            Matrix.size m
+                    in
                     if Matrix.equivalent (10 ^ -4) maybeEye (Matrix.eye n) then
                         Expect.pass
 
                     else
-                        Expect.fail "Inverse is wrong"
+                        let
+                            toIndentedString : Matrix -> String
+                            toIndentedString matrix =
+                                matrix
+                                    |> Matrix.toAlignedString
+                                    |> Matrix.Format.indent "  "
 
-        Err "Matrix is singular" ->
-            Expect.pass
+                            message : List String
+                            message =
+                                [ "Inverse is wrong for matrix:"
+                                , toIndentedString m
+                                , "the calculated inverse was:"
+                                , toIndentedString inv
+                                , "but multiplying it by the original matrix gave:"
+                                , toIndentedString maybeEye
+                                , "instead of the identity matrix"
+                                ]
+                        in
+                        Expect.fail (String.join "\n" message)
 
         Err e ->
             Expect.fail e
-
-
-squareMatrixFuzzer : Fuzzer Matrix
-squareMatrixFuzzer =
-    let
-        bound : Float
-        bound =
-            10 ^ 4
-    in
-    Fuzz.intRange 1 5
-        |> Fuzz.andThen
-            (\n ->
-                Fuzz.listOfLength (n * n) (Fuzz.floatRange -bound bound)
-                    |> Fuzz.filterMap
-                        (\items -> Matrix.fromList ( n, n ) items |> Result.toMaybe)
-            )

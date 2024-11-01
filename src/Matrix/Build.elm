@@ -1,4 +1,18 @@
-module Matrix.Build exposing (mat1, mat1x2, mat2, mat2x1, mat2x3, mat3, mat3x2)
+module Matrix.Build exposing
+    ( mat1
+    , mat2, mat1x2, mat2x1
+    , mat3, mat1x3, mat3x1, mat2x3, mat3x2
+    )
+
+{-|
+
+@docs mat1
+
+@docs mat2, mat1x2, mat2x1
+
+@docs mat3, mat1x3, mat3x1, mat2x3, mat3x2
+
+-}
 
 import Matrix exposing (Matrix)
 
@@ -110,6 +124,35 @@ mat2 ( ( a, b ), ( c, d ) ) =
         )
 
 
+{-| Builds a 1x3 matrix.
+
+    import Matrix
+
+    mat1x3
+        ( (42, 1, 2)
+        )
+        |> Matrix.toString
+    --> "42 1 2"
+
+-}
+mat1x3 :
+    ( Float, Float, Float )
+    -> Matrix
+mat1x3 ( a, b, c ) =
+    Matrix.initialize ( 1, 3 )
+        (\r_ c_ ->
+            case ( r_, c_ ) of
+                ( 0, 0 ) ->
+                    a
+
+                ( 0, 1 ) ->
+                    b
+
+                _ ->
+                    c
+        )
+
+
 {-| Builds a 2x3 matrix.
 
     import Matrix
@@ -191,6 +234,40 @@ mat3x2 ( ( a, b ), ( c, d ), ( e, f ) ) =
 
                 _ ->
                     f
+        )
+
+
+{-| Builds a 3x1 matrix.
+
+    import Matrix
+
+    mat2x3
+        ( 42
+        , 2
+        , 4
+        )
+        |> Matrix.toString
+    --> "42 1\n2 3\n4 5"
+
+-}
+mat3x1 :
+    ( Float
+    , Float
+    , Float
+    )
+    -> Matrix
+mat3x1 ( a, b, c ) =
+    Matrix.initialize ( 3, 1 )
+        (\r_ c_ ->
+            case ( r_, c_ ) of
+                ( 0, 0 ) ->
+                    a
+
+                ( 1, 0 ) ->
+                    b
+
+                _ ->
+                    c
         )
 
 
